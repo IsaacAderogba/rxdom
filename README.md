@@ -1,4 +1,4 @@
-# RxDOM, a zero-dependency JavaScript ilbrary for building reactive user interfaces
+# RxDOM, a zero-dependency JavaScript library for building reactive user interfaces
 
 [RxDOM](https://github.com/IsaacAderogba/rxdom) is s a JavaScript library for creating user interfaces. Instead of requiring a compilation step like modern frameworks, RxDOM works with HTML **fragments**, **components**, and **elements** directly to construct reactive interfaces.
 
