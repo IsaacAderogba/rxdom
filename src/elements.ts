@@ -1,7 +1,7 @@
 import { DOMElement, RxElement } from "./models";
 
 export const createElement = (props: ElementProps): RxElement => ({
-  element: props.updater,
+  onUpdate: props.onUpdate,
   dom: props.dom,
   type: "element",
   props: { content: [] },
@@ -9,5 +9,5 @@ export const createElement = (props: ElementProps): RxElement => ({
 
 type ElementProps = {
   dom: DOMElement;
-  updater?: RxElement["element"];
+  onUpdate?: RxElement["onUpdate"];
 };

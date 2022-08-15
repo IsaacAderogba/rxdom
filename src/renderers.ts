@@ -35,7 +35,7 @@ export class SyncRenderer {
       return newFiber;
     } else if (node.type === "element") {
       // update element
-      if (node.element) fiber.dom = node.element({ fiber, dom: node.dom });
+      if (node.onUpdate) fiber.dom = node.onUpdate({ fiber, dom: node.dom });
       fiber.node = node;
       return fiber;
     } else if (node.type === "component") {
