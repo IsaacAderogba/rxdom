@@ -41,7 +41,8 @@ export abstract class Component<P = unknown, S = unknown> {
 
   public onUpdate() {}
   private update(node: RxNode) {
-    const child = this.renderer.reconcile(
+    const child = this.renderer.render(
+      this.fiber,
       this.fiber.dom.parentNode as HTMLElement,
       this.fiber.content[0],
       this.render()

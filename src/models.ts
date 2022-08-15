@@ -27,6 +27,7 @@ export type DOMElement = HTMLElement | Text;
 interface FiberBase {
   dom: DOMElement;
   node: RxNode;
+  parent?: FiberInstance;
   content: FiberInstance[];
 }
 

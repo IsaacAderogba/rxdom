@@ -35,7 +35,8 @@ const Todo = FC<TodoProps>(props => {
         onclick: () => deleteTodo(id),
         content: ["X"],
       }),
-      input({ type: "checkbox", value: done, onclick: () => toggleTodo(id) }),
+      done,
+      input({ type: "checkbox", checked: done, onclick: () => toggleTodo(id) }),
       span({ content: [name] }),
     ],
   });
@@ -84,6 +85,10 @@ const TodoForm = Component.FC(TodoFormComponent);
 type AppState = { todos: TodoAttrs[] };
 class AppComponent extends Component<{}, AppState> {
   state: AppState = { todos: [] };
+
+  onUpdate() {
+    console.log(this);
+  }
 
   addItem = (name: string) => {
     this.setState(prev => ({
