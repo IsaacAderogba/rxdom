@@ -58,18 +58,12 @@ export abstract class Component<P = unknown, S = unknown> {
   public abstract render(): RxNode;
 
   static FC =
-    <P>(component: { new (props: P): Component<P> }) =>
-    (props: ComponentProps<P> = {} as P) =>
-      createComponent(component, props);
+    <P, S>(component: { new (props: P): Component<P, S> }) =>
+    (props: ComponentProps<P> = {} as P): RxComponent => {
+      const content = createContent(props);
+      return { type: "component", component, props: { ...props, content } };
+    };
 }
-
-const createComponent = <P>(
-  component: { new (props: P): Component<P> },
-  props: ComponentProps<P>
-): RxComponent => {
-  const content = createContent(props);
-  return { type: "component", component, props: { ...props, content } };
-};
 
 export const FC =
   <P>(component: (props: ComponentProps<P>) => RxNode) =>
