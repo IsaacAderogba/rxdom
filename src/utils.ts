@@ -41,9 +41,6 @@ export function updateDomProps(
   }
 }
 
-export type Attrs = Record<string, any>;
-
-
 export const isStyle = (key: string) => key === "style";
 export const isAttr = (key: string) => key !== "content" && !isStyle(key);
 export const isNew = (prev: Attrs, next: Attrs) => (key: string) =>
@@ -51,4 +48,5 @@ export const isNew = (prev: Attrs, next: Attrs) => (key: string) =>
 export const isGone = (_prev: Attrs, next: Attrs) => (key: string) =>
   !(key in next);
 
-export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+export type Attrs = Record<string, any>;
+export type ValueOf<T> = T[keyof T];

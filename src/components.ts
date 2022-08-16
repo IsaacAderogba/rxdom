@@ -6,7 +6,7 @@ import {
   RxNode,
 } from "./models";
 import { Renderer } from "./renderers";
-import { ContentProps, Attrs, createContent } from "./utils";
+import { ContentProps, Attrs, createContent, ValueOf } from "./utils";
 
 export class Component<
   S extends Attrs = Attrs,
@@ -84,14 +84,8 @@ export class Component<
       constructor: RxComponentTemplate<S, P, C>["constructor"],
       context: ComponentContext<C> = {} as C
     ) =>
-    (props: ComponentProps<P> = {} as P): RxComponent => {
-      return {
-        type: "component",
-        props: { ...props, content: createContent(props) },
-        context,
-        template: { constructor },
-      };
-    };
+    (props: ComponentProps<P> = {} as P): RxComponent =>
+      createComponent({ constructor }, props, context);
 }
 
 export const FC =
@@ -99,14 +93,19 @@ export const FC =
     composer: RxComponentTemplate<{}, P, C>["composer"],
     context: ComponentContext<C> = {} as C
   ) =>
-  (props: ComponentProps<P> = {} as P): RxComponent => {
-    return {
-      type: "component",
-      props: { ...props, content: createContent(props) },
-      context,
-      template: { constructor: Component, composer },
-    };
-  };
+  (props: ComponentProps<P> = {} as P): RxComponent =>
+    createComponent({ constructor: Component, composer }, props, context);
+
+const createComponent = <S, P, C>(
+  template: RxComponentTemplate<S, P, C>,
+  props: ComponentProps<P>,
+  context: ComponentContext<C>
+): RxComponent => ({
+  type: "component",
+  props: { ...props, content: createContent(props) },
+  context,
+  template,
+});
 
 type ComponentProps<P> = P & ContentProps;
-type ComponentContext<C> = Record<keyof C, Context>;
+type ComponentContext<C> = Record<keyof C, Context<ValueOf<C>>>;
