@@ -101,7 +101,7 @@ const TodoList = FC<{ todos: TodoAttrs[]; actions: TodoActions }>(
         li({ content: [Todo({ ...todo, ...actions })] })
       ),
     });
-  }
+  },
 );
 
 interface TodoAttrs {

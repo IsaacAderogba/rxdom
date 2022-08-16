@@ -9,12 +9,13 @@ interface RxBase {
 export interface RxComponent<S = any, P = any, C = any> extends RxBase {
   type: "component";
   context: Record<keyof C, Context>;
-  template: {
-    constructor: { new (props: P, context: C): Component<S, P, C> };
-    render?: (props: P, context: C) => RxNode;
-  };
+  template: RxComponentTemplate<S, P, C>;
 }
 
+export type RxComponentTemplate<S, P, C> = {
+  constructor: { new (props: P, context: C): Component<S, P, C> };
+  composer?: (props: P, context: C) => RxNode;
+};
 export interface RxFragment extends RxBase {
   type: keyof HTMLElementTagNameMap | "text";
 }

@@ -1,25 +1,36 @@
 import { Context } from "./context";
-import { FiberComponent, RxComponent, RxNode } from "./models";
+import {
+  FiberComponent,
+  RxComponent,
+  RxComponentTemplate,
+  RxNode,
+} from "./models";
 import { Renderer } from "./renderers";
 import { ContentProps, Attrs, createContent } from "./utils";
 
-export abstract class Component<
+export class Component<
   S extends Attrs = Attrs,
   P extends Attrs = Attrs,
   C extends Attrs = Attrs
 > {
-  protected state!: Readonly<S>;
-  protected props!: Readonly<P>;
-  protected context!: Readonly<C>;
+  protected state: Readonly<S>;
+  protected props: Readonly<P>;
+  protected context: Readonly<C>;
 
-  protected fiber!: FiberComponent;
+  private template!: RxComponentTemplate<S, P, C>;
   private renderer!: Renderer;
+  protected fiber!: FiberComponent;
 
-  constructor(props: P, context: C) {
+  constructor(props: P = {} as P, context: C = {} as C) {
+    this.state = {} as S;
     this.props = props;
+    this.context = context;
   }
 
-  initTemplate() {}
+  init(renderer: Renderer, template: RxComponentTemplate<S, P, C>) {
+    this.renderer = renderer;
+    this.template = template;
+  }
 
   setState(state: S | ((s: S) => S)) {
     // @ts-ignore
@@ -33,8 +44,7 @@ export abstract class Component<
   }
 
   public onMount(): void | (() => void) {}
-  mount(renderer: Renderer, fiber: FiberComponent) {
-    this.renderer = renderer;
+  mount(fiber: FiberComponent) {
     this.fiber = fiber;
     setTimeout(() => {
       const onUnmount = this.onMount();
@@ -64,21 +74,20 @@ export abstract class Component<
     return this.fiber;
   }
 
-  public abstract render(): RxNode;
+  public render(): RxNode {
+    if (!this.template.composer) throw new Error("Todo - composer expected");
+    return this.template.composer(this.props, this.context);
+  }
 
   static FC =
     <S extends Attrs, P extends Attrs, C extends Attrs>(
-      constructor: RxComponent<S, P, C>["template"]["constructor"]
-    ) =>
-    (
-      props: ComponentProps<P> = {} as P,
+      constructor: RxComponentTemplate<S, P, C>["constructor"],
       context: ComponentContext<C> = {} as C
-    ): RxComponent => {
-      const content = createContent(props);
-
+    ) =>
+    (props: ComponentProps<P> = {} as P): RxComponent => {
       return {
         type: "component",
-        props: { ...props, content },
+        props: { ...props, content: createContent(props) },
         context,
         template: { constructor },
       };
@@ -86,9 +95,18 @@ export abstract class Component<
 }
 
 export const FC =
-  <P extends Attrs = Attrs>(component: (props: ComponentProps<P>) => RxNode) =>
-  (props: ComponentProps<P> = {} as P) =>
-    component(props);
+  <P extends Attrs = Attrs, C extends Attrs = Attrs>(
+    composer: RxComponentTemplate<{}, P, C>["composer"],
+    context: ComponentContext<C> = {} as C
+  ) =>
+  (props: ComponentProps<P> = {} as P): RxComponent => {
+    return {
+      type: "component",
+      props: { ...props, content: createContent(props) },
+      context,
+      template: { constructor: Component, composer },
+    };
+  };
 
 type ComponentProps<P> = P & ContentProps;
 type ComponentContext<C> = Record<keyof C, Context>;
