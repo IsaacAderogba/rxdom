@@ -37,7 +37,9 @@ export class SyncRenderer {
       return newFiber;
     } else if (node.type === "element") {
       // update element
-      if (node.onUpdate) fiber.dom = node.onUpdate({ fiber, dom: node.dom });
+      if (node.template.onUpdate) {
+        fiber.dom = node.template.onUpdate({ fiber, dom: node.template.dom });
+      }
       fiber.node = node;
       return fiber;
     } else if (node.type === "component") {
@@ -72,12 +74,17 @@ export class SyncRenderer {
 
   construct = (parent: FiberInstance, node: RxNode): FiberInstance => {
     if (node.type === "element") {
-      const fiber: FiberElement = { dom: node.dom, node, content: [], parent };
+      const fiber: FiberElement = {
+        dom: node.template.dom,
+        node,
+        content: [],
+        parent,
+      };
       return fiber;
     }
 
     if (node.type === "component") {
-      const component = new node.component(node.props);
+      const component = new node.template.constructor(node.props, node.context);
 
       const fiber = { node, component, parent } as FiberComponent;
       fiber.content = [];

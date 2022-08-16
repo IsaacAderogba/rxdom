@@ -1,8 +1,8 @@
 import { RxFragment } from "./models";
-import { ContentProps, createContent, Object } from "./utils";
+import { ContentProps, createContent, Attrs } from "./utils";
 
 type FragmentProps = Partial<
-  Object &
+Attrs &
     Partial<GlobalEventHandlers> & {
       style?: Partial<CSSStyleDeclaration>;
     } & ContentProps

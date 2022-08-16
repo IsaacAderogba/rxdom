@@ -12,8 +12,8 @@ const textFragment = (text: TextFragment): RxFragment => ({
 
 export function updateDomProps(
   dom: DOMElement,
-  prevProps: Object,
-  nextProps: Object
+  prevProps: Attrs,
+  nextProps: Attrs
 ) {
   // attrs
   Object.keys(prevProps)
@@ -41,11 +41,14 @@ export function updateDomProps(
   }
 }
 
-export type Object = Record<string, any>;
+export type Attrs = Record<string, any>;
+
 
 export const isStyle = (key: string) => key === "style";
 export const isAttr = (key: string) => key !== "content" && !isStyle(key);
-export const isNew = (prev: Object, next: Object) => (key: string) =>
+export const isNew = (prev: Attrs, next: Attrs) => (key: string) =>
   prev[key] !== next[key];
-export const isGone = (_prev: Object, next: Object) => (key: string) =>
+export const isGone = (_prev: Attrs, next: Attrs) => (key: string) =>
   !(key in next);
+
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;

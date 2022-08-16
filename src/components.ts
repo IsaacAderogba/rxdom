@@ -1,17 +1,25 @@
+import { Context } from "./context";
 import { FiberComponent, RxComponent, RxNode } from "./models";
 import { Renderer } from "./renderers";
-import { ContentProps, createContent } from "./utils";
+import { ContentProps, Attrs, createContent } from "./utils";
 
-export abstract class Component<P = unknown, S = unknown> {
-  protected props!: Readonly<P>;
+export abstract class Component<
+  S extends Attrs = Attrs,
+  P extends Attrs = Attrs,
+  C extends Attrs = Attrs
+> {
   protected state!: Readonly<S>;
-  protected fiber!: FiberComponent;
+  protected props!: Readonly<P>;
+  protected context!: Readonly<C>;
 
+  protected fiber!: FiberComponent;
   private renderer!: Renderer;
 
-  constructor(props: P) {
+  constructor(props: P, context: C) {
     this.props = props;
   }
+
+  initTemplate() {}
 
   setState(state: S | ((s: S) => S)) {
     // @ts-ignore
@@ -59,16 +67,28 @@ export abstract class Component<P = unknown, S = unknown> {
   public abstract render(): RxNode;
 
   static FC =
-    <P, S>(component: { new (props: P): Component<P, S> }) =>
-    (props: ComponentProps<P> = {} as P): RxComponent => {
+    <S extends Attrs, P extends Attrs, C extends Attrs>(
+      constructor: RxComponent<S, P, C>["template"]["constructor"]
+    ) =>
+    (
+      props: ComponentProps<P> = {} as P,
+      context: ComponentContext<C> = {} as C
+    ): RxComponent => {
       const content = createContent(props);
-      return { type: "component", component, props: { ...props, content } };
+
+      return {
+        type: "component",
+        props: { ...props, content },
+        context,
+        template: { constructor },
+      };
     };
 }
 
 export const FC =
-  <P>(component: (props: ComponentProps<P>) => RxNode) =>
+  <P extends Attrs = Attrs>(component: (props: ComponentProps<P>) => RxNode) =>
   (props: ComponentProps<P> = {} as P) =>
     component(props);
 
 type ComponentProps<P> = P & ContentProps;
+type ComponentContext<C> = Record<keyof C, Context>;

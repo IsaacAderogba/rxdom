@@ -26,7 +26,11 @@ export class RxDOM {
   }
 
   private createRoot(dom: DOMElement): FiberElement {
-    const node: RxElement = { dom, props: { content: [] }, type: "element" };
+    const node: RxElement = {
+      props: { content: [] },
+      template: { dom },
+      type: "element",
+    };
     return { dom, content: [], node };
   }
 }

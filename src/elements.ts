@@ -1,13 +1,7 @@
-import { DOMElement, RxElement } from "./models";
+import { RxElement } from "./models";
 
-export const createElement = (props: ElementProps): RxElement => ({
-  onUpdate: props.onUpdate,
-  dom: props.dom,
+export const createElement = (template: RxElement["template"]): RxElement => ({
   type: "element",
   props: { content: [] },
+  template,
 });
-
-type ElementProps = {
-  dom: DOMElement;
-  onUpdate?: RxElement["onUpdate"];
-};

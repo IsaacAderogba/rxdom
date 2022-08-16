@@ -12,78 +12,8 @@ import {
   FC,
 } from "./src";
 
-interface TodoAttrs {
-  id: string;
-  name: string;
-  done: boolean;
-}
-
-interface TodoActions {
-  toggleTodo(id: string): void;
-  deleteTodo(id: string): void;
-}
-
-type TodoProps = TodoAttrs & TodoActions;
-
-const Todo = FC<TodoProps>(props => {
-  const { id, name, done, toggleTodo, deleteTodo } = props;
-
-  return div({
-    style: { display: "flex", gap: "4px", alignItems: "center" },
-    content: [
-      button({
-        onclick: () => deleteTodo(id),
-        content: ["X"],
-      }),
-      done,
-      input({ type: "checkbox", checked: done, onclick: () => toggleTodo(id) }),
-      span({ content: [name] }),
-    ],
-  });
-});
-
-const TodoList = FC<{ todos: TodoAttrs[]; actions: TodoActions }>(
-  ({ todos, actions }) => {
-    return ul({
-      style: { display: "flex", flexDirection: "column", gap: "4px" },
-      content: todos.map(todo =>
-        li({ content: [Todo({ ...todo, ...actions })] })
-      ),
-    });
-  }
-);
-
-class TodoFormComponent extends Component<{ addItem: (name: string) => void }> {
-  state = { name: "" };
-
-  render() {
-    return form({
-      style: { display: "flex", gap: "4px", alignItems: "center" },
-      onsubmit: (e: Event) => {
-        e.preventDefault();
-        this.props.addItem(this.state.name);
-        this.setState({ name: "" });
-      },
-      content: [
-        label({
-          for: "i-n",
-          content: ["Add new item"],
-        }),
-        input({
-          id: "i-n",
-          value: this.state.name,
-          oninput: (e: any) =>
-            this.setState(s => ({ ...s, name: e.target.value })),
-        }),
-      ],
-    });
-  }
-}
-
-const TodoForm = Component.FC(TodoFormComponent);
-
 type AppState = { todos: TodoAttrs[] };
-class AppComponent extends Component<{}, AppState> {
+class AppComponent extends Component<AppState, {}> {
   state: AppState = { todos: [] };
 
   onUpdate() {
@@ -119,7 +49,10 @@ class AppComponent extends Component<{}, AppState> {
         TodoForm({ addItem: this.addItem }),
         TodoList({
           todos: this.state.todos,
-          actions: { deleteTodo: this.deleteTodo, toggleTodo: this.toggleTodo },
+          actions: {
+            deleteTodo: this.deleteTodo,
+            toggleTodo: this.toggleTodo,
+          },
         }),
       ],
     });
@@ -127,6 +60,79 @@ class AppComponent extends Component<{}, AppState> {
 }
 
 const App = Component.FC(AppComponent);
+
+class TodoFormComponent extends Component<
+  {},
+  { addItem: (name: string) => void }
+> {
+  state = { name: "" };
+
+  render() {
+    return form({
+      style: { display: "flex", gap: "4px", alignItems: "center" },
+      onsubmit: (e: Event) => {
+        e.preventDefault();
+        this.props.addItem(this.state.name);
+        this.setState({ name: "" });
+      },
+      content: [
+        label({
+          for: "i-n",
+          content: ["Add new item"],
+        }),
+        input({
+          id: "i-n",
+          value: this.state.name,
+          oninput: (e: any) =>
+            this.setState(s => ({ ...s, name: e.target.value })),
+        }),
+      ],
+    });
+  }
+}
+
+const TodoForm = Component.FC(TodoFormComponent);
+
+const TodoList = FC<{ todos: TodoAttrs[]; actions: TodoActions }>(
+  ({ todos, actions }) => {
+    return ul({
+      style: { display: "flex", flexDirection: "column", gap: "4px" },
+      content: todos.map(todo =>
+        li({ content: [Todo({ ...todo, ...actions })] })
+      ),
+    });
+  }
+);
+
+interface TodoAttrs {
+  id: string;
+  name: string;
+  done: boolean;
+}
+
+interface TodoActions {
+  toggleTodo(id: string): void;
+  deleteTodo(id: string): void;
+}
+
+type TodoProps = TodoAttrs & TodoActions;
+
+const Todo = FC<TodoProps>(props => {
+  const { id, name, done, toggleTodo, deleteTodo } = props;
+
+  return div({
+    style: { display: "flex", gap: "4px", alignItems: "center" },
+    content: [
+      button({
+        onclick: () => deleteTodo(id),
+        content: ["X"],
+      }),
+      done,
+      input({ type: "checkbox", checked: done, onclick: () => toggleTodo(id) }),
+      span({ content: [name] }),
+    ],
+  });
+});
 
 const rxdom = new RxDOM();
 rxdom.render(App(), document.getElementById("app")!);

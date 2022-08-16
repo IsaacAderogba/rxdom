@@ -1,13 +1,18 @@
 import { Component } from "./components";
-import { Object } from "./utils";
+import { Context } from "./context";
+import { Attrs } from "./utils";
 
 interface RxBase {
-  props: Object & { content: RxNode[] };
+  props: Attrs & { content: RxNode[] };
 }
 
-export interface RxComponent extends RxBase {
+export interface RxComponent<S = any, P = any, C = any> extends RxBase {
   type: "component";
-  component: { new (props: any): Component };
+  context: Record<keyof C, Context>;
+  template: {
+    constructor: { new (props: P, context: C): Component<S, P, C> };
+    render?: (props: P, context: C) => RxNode;
+  };
 }
 
 export interface RxFragment extends RxBase {
@@ -16,8 +21,10 @@ export interface RxFragment extends RxBase {
 
 export interface RxElement extends RxBase {
   type: "element";
-  onUpdate?: (props: { fiber: FiberElement; dom: DOMElement }) => DOMElement;
-  dom: DOMElement;
+  template: {
+    onUpdate?: (props: { fiber: FiberElement; dom: DOMElement }) => DOMElement;
+    dom: DOMElement;
+  };
 }
 
 export type RxNode = RxFragment | RxComponent | RxElement;
