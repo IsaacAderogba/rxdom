@@ -1,12 +1,23 @@
-import { RxNode } from "./models";
+import { Component, createComponent } from "./components";
+import { div } from "./fragments";
+import { RxComponent } from "./models";
 import { ContentProps, Attrs } from "./utils";
 
-export class Context<P extends Attrs = Attrs> {
-  Register(props: Required<ContentProps> & P): RxNode {
-    // needs to somehow be associated
+export class ContextProvider<V extends Attrs = Attrs> {
+  value!: V;
+
+  Context({ content, ...value }: ContentProps & V): RxComponent {
+    this.value = value as V;
+
+    return createComponent(
+      {
+        constructor: Component,
+        provider: this,
+        render: props => div(props),
+      },
+      { props: { content }, context: {} }
+    );
   }
 }
 
-export const createContext = <P extends Attrs>() => {
-  return new Context<P>();
-};
+export const createProvider = <P extends Attrs>() => new ContextProvider<P>();

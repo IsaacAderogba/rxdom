@@ -1,4 +1,4 @@
-import { Context } from "./context";
+import { ContextProvider } from "./context";
 import {
   FiberComponent,
   RxComponent,
@@ -75,8 +75,8 @@ export class Component<
   }
 
   public render(): RxNode {
-    if (!this.template.composer) throw new Error("Todo - composer expected");
-    return this.template.composer(this.props, this.context);
+    if (!this.template.render) throw new Error("Todo - render expected");
+    return this.template.render(this.props, this.context);
   }
 
   static FC =
@@ -85,27 +85,28 @@ export class Component<
       context: ComponentContext<C> = {} as C
     ) =>
     (props: ComponentProps<P> = {} as P): RxComponent =>
-      createComponent({ constructor }, props, context);
+      createComponent({ constructor }, { props, context });
 }
 
 export const FC =
   <P extends Attrs = Attrs, C extends Attrs = Attrs>(
-    composer: RxComponentTemplate<{}, P, C>["composer"],
+    render: RxComponentTemplate<{}, P, C>["render"],
     context: ComponentContext<C> = {} as C
   ) =>
   (props: ComponentProps<P> = {} as P): RxComponent =>
-    createComponent({ constructor: Component, composer }, props, context);
+    createComponent({ render, constructor: Component }, { props, context });
 
-const createComponent = <S, P, C>(
+export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
   template: RxComponentTemplate<S, P, C>,
-  props: ComponentProps<P>,
-  context: ComponentContext<C>
-): RxComponent => ({
-  type: "component",
-  props: { ...props, content: createContent(props) },
-  context,
-  template,
-});
+  { props, context }: { props: ComponentProps<P>; context: ComponentContext<C> }
+): RxComponent => {
+  return {
+    type: "component",
+    props: { ...props, content: createContent(props) },
+    context,
+    template,
+  };
+};
 
 type ComponentProps<P> = P & ContentProps;
-type ComponentContext<C> = Record<keyof C, Context<ValueOf<C>>>;
+type ComponentContext<C> = Record<keyof C, ContextProvider<ValueOf<C>>>;

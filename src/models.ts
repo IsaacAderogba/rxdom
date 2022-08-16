@@ -1,5 +1,5 @@
 import { Component } from "./components";
-import { Context } from "./context";
+import { ContextProvider } from "./context";
 import { Attrs } from "./utils";
 
 interface RxBase {
@@ -8,13 +8,14 @@ interface RxBase {
 
 export interface RxComponent<S = any, P = any, C = any> extends RxBase {
   type: "component";
-  context: Record<keyof C, Context>;
+  context: Record<keyof C, ContextProvider>;
   template: RxComponentTemplate<S, P, C>;
 }
 
 export type RxComponentTemplate<S, P, C> = {
   constructor: { new (props: P, context: C): Component<S, P, C> };
-  composer?: (props: P, context: C) => RxNode;
+  render?: (props: P, context: C) => RxNode;
+  provider?: ContextProvider;
 };
 export interface RxFragment extends RxBase {
   type: keyof HTMLElementTagNameMap | "text";

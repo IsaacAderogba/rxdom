@@ -10,11 +10,11 @@ import {
   input,
   span,
   FC,
-  createContext,
+  createProvider,
 } from "./src";
 
 type StoreProvider = { hi: string };
-const StoreContext = createContext<StoreProvider>();
+const storeProvider = createProvider<StoreProvider>();
 
 type AppState = { todos: TodoAttrs[] };
 class AppComponent extends Component<AppState, {}> {
@@ -48,8 +48,8 @@ class AppComponent extends Component<AppState, {}> {
   };
 
   render() {
-    return StoreContext.Register({
-      hi: "",
+    return storeProvider.Context({
+      hi: "hi",
       content: [
         div({
           content: [
@@ -71,9 +71,9 @@ class AppComponent extends Component<AppState, {}> {
 const App = Component.FC(AppComponent);
 
 type TodoFormProps = { addItem: (name: string) => void };
-type TodoFormConsumer = { store: StoreProvider };
+type TodoFormContext = { store: StoreProvider };
 
-class TodoFormComponent extends Component<{}, TodoFormProps, TodoFormConsumer> {
+class TodoFormComponent extends Component<{}, TodoFormProps, TodoFormContext> {
   state = { name: "" };
 
   render() {
@@ -100,7 +100,9 @@ class TodoFormComponent extends Component<{}, TodoFormProps, TodoFormConsumer> {
   }
 }
 
-const TodoForm = Component.FC(TodoFormComponent);
+const TodoForm = Component.FC(TodoFormComponent, {
+  store: storeProvider,
+});
 
 const TodoList = FC<{ todos: TodoAttrs[]; actions: TodoActions }>(
   ({ todos, actions }) => {
@@ -125,9 +127,9 @@ interface TodoActions {
 }
 
 type TodoProps = TodoAttrs & TodoActions;
-type TodoConsumer = { store: StoreProvider };
+type TodoContext = { store: StoreProvider };
 
-const Todo = FC<TodoProps, TodoConsumer>(
+const Todo = FC<TodoProps, TodoContext>(
   props => {
     const { id, name, done, toggleTodo, deleteTodo } = props;
 
@@ -148,7 +150,7 @@ const Todo = FC<TodoProps, TodoConsumer>(
       ],
     });
   },
-  { store: StoreContext }
+  { store: storeProvider }
 );
 
 const rxdom = new RxDOM();

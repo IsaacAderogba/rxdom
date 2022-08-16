@@ -50,3 +50,4 @@ export const isGone = (_prev: Attrs, next: Attrs) => (key: string) =>
 
 export type Attrs = Record<string, any>;
 export type ValueOf<T> = T[keyof T];
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
