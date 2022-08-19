@@ -84,15 +84,13 @@ export class SyncRenderer {
     }
 
     if (node.type === "component") {
-      const { props, context, template } = node;
-      const component = new node.template.constructor(props, context.consumer);
-      const fiber = { node, component, parent } as FiberComponent;
-      component.init(this, template, fiber);
-      fiber.content = [];
-      const child = this.construct(fiber, component.render());
+      const fiber = { node, parent, content: [] } as unknown as FiberComponent;
+
+      fiber.component = new node.template.constructor(this, fiber);
+      const child = this.construct(fiber, fiber.component.render());
       fiber.dom = child.dom;
       fiber.content = [child];
-      component.mount();
+      fiber.component.mount();
 
       return fiber;
     }

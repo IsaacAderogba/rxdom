@@ -1,5 +1,6 @@
 import { Component } from "./components";
 import { ContextProvider, ContextUnsubscribe } from "./context";
+import { Renderer } from "./renderers";
 import { Attrs, ValueOf } from "./utils";
 
 interface RxBase {
@@ -17,7 +18,9 @@ export interface RxComponent<S = any, P = any, C = any> extends RxBase {
 }
 
 export type RxComponentTemplate<S, P, C> = {
-  constructor: { new (props: P, context: C): Component<S, P, C> };
+  constructor: {
+    new (renderer: Renderer, fiber: FiberComponent): Component<S, P, C>;
+  };
   render?: (props: P, context: C) => RxNode;
 };
 export interface RxFragment extends RxBase {

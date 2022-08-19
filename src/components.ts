@@ -12,28 +12,33 @@ export class Component<
   P extends Attrs = Attrs,
   C extends Attrs = Attrs
 > {
+  private renderer!: Renderer;
+  private template!: RxComponentTemplate<S, P, C>;
+  protected fiber!: FiberComponent;
   protected state: Readonly<S>;
   protected props: Readonly<P>;
   protected context: Readonly<C>;
 
-  private renderer!: Renderer;
-  private template!: RxComponentTemplate<S, P, C>;
-  protected fiber!: FiberComponent;
+  constructor(renderer: Renderer, fiber: FiberComponent) {
+    this.renderer = renderer;
+    this.template = fiber.node.template;
 
-  constructor(props: P = {} as P, context: C = {} as C) {
+    this.fiber = fiber;
     this.state = {} as S;
-    this.props = props;
-    this.context = context;
+    this.props = fiber.node.props as P;
+
+    this.context = this.initContexts();
   }
 
-  init(
-    renderer: Renderer,
-    template: RxComponentTemplate<S, P, C>,
-    fiber: FiberComponent
-  ) {
-    this.renderer = renderer;
-    this.template = template;
-    this.fiber = fiber;
+  initContexts(): C {
+    const { unsubscribes, provider, consumer } = this.fiber.node.context;
+    if (provider) unsubscribes.push(provider.registerProvider(this.fiber));
+
+    // todo
+  }
+
+  unregisterContexts() {
+    this.fiber.node.context.unsubscribes.forEach(unsub => unsub());
   }
 
   setState(state: S | ((s: S) => S)) {
@@ -58,6 +63,7 @@ export class Component<
   private onUnmount(): void | (() => void) {}
   public unmount = () => {
     if (this.onUnmount) this.onUnmount();
+    this.unregisterContexts();
   };
 
   public onUpdate() {}
