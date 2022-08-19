@@ -1,4 +1,3 @@
-import { ContextProvider } from "./context";
 import {
   FiberComponent,
   RxComponent,
@@ -6,7 +5,7 @@ import {
   RxNode,
 } from "./models";
 import { Renderer } from "./renderers";
-import { ContentProps, Attrs, createContent, ValueOf } from "./utils";
+import { ContentProps, Attrs, createContent, RequiredKeys } from "./utils";
 
 export class Component<
   S extends Attrs = Attrs,
@@ -17,8 +16,8 @@ export class Component<
   protected props: Readonly<P>;
   protected context: Readonly<C>;
 
-  private template!: RxComponentTemplate<S, P, C>;
   private renderer!: Renderer;
+  private template!: RxComponentTemplate<S, P, C>;
   protected fiber!: FiberComponent;
 
   constructor(props: P = {} as P, context: C = {} as C) {
@@ -27,9 +26,14 @@ export class Component<
     this.context = context;
   }
 
-  init(renderer: Renderer, template: RxComponentTemplate<S, P, C>) {
+  init(
+    renderer: Renderer,
+    template: RxComponentTemplate<S, P, C>,
+    fiber: FiberComponent
+  ) {
     this.renderer = renderer;
     this.template = template;
+    this.fiber = fiber;
   }
 
   setState(state: S | ((s: S) => S)) {
@@ -44,8 +48,7 @@ export class Component<
   }
 
   public onMount(): void | (() => void) {}
-  mount(fiber: FiberComponent) {
-    this.fiber = fiber;
+  mount() {
     setTimeout(() => {
       const onUnmount = this.onMount();
       if (onUnmount) this.onUnmount = onUnmount;
@@ -58,7 +61,7 @@ export class Component<
   };
 
   public onUpdate() {}
-  private update(node: RxNode) {
+  private update(node: RxComponent) {
     const child = this.renderer.render(
       this.fiber,
       this.fiber.dom.parentNode as HTMLElement,
@@ -82,31 +85,39 @@ export class Component<
   static FC =
     <S extends Attrs, P extends Attrs, C extends Attrs>(
       constructor: RxComponentTemplate<S, P, C>["constructor"],
-      context: ComponentContext<C> = {} as C
+      consumer: Context<S, P, C>["consumer"] = {} as C
     ) =>
-    (props: ComponentProps<P> = {} as P): RxComponent =>
-      createComponent({ constructor }, { props, context });
+    (props: Props<P> = {} as P) =>
+      createComponent({ constructor }, { props, context: { consumer } });
 }
 
 export const FC =
   <P extends Attrs = Attrs, C extends Attrs = Attrs>(
     render: RxComponentTemplate<{}, P, C>["render"],
-    context: ComponentContext<C> = {} as C
+    consumer: Context<{}, P, C>["consumer"] = {} as C
   ) =>
-  (props: ComponentProps<P> = {} as P): RxComponent =>
-    createComponent({ render, constructor: Component }, { props, context });
+  (props: Props<P> = {} as P) =>
+    createComponent(
+      { render, constructor: Component },
+      { props, context: { consumer } }
+    );
 
 export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
   template: RxComponentTemplate<S, P, C>,
-  { props, context }: { props: ComponentProps<P>; context: ComponentContext<C> }
+  options: { props: Props<P>; context: Context<S, P, C> }
 ): RxComponent => {
+  const { props, context } = options;
+
   return {
     type: "component",
     props: { ...props, content: createContent(props) },
-    context,
-    template,
+    context: { unsubscribes: [], ...context },
+    template: { ...template },
   };
 };
 
-type ComponentProps<P> = P & ContentProps;
-type ComponentContext<C> = Record<keyof C, ContextProvider<ValueOf<C>>>;
+type Props<P> = P & ContentProps;
+type Context<S, P, C> = RequiredKeys<
+  RxComponent<S, P, C>["context"],
+  "consumer"
+>;
