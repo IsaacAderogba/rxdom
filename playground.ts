@@ -11,20 +11,18 @@ import {
   span,
   FC,
   createProvider,
-  b,
-  i,
 } from "./src";
 
-type StoreProvider = {
-  todos: TodoAttrs[];
+type AppProvider = {
+  todos: TodoProps[];
   addTodo: (name: string) => void;
   toggleTodo: (id: string) => void;
   deleteTodo: (id: string) => void;
 };
 
-const storeProvider = createProvider<StoreProvider>();
+const appProvider = createProvider<AppProvider>();
 
-type AppState = { todos: TodoAttrs[] };
+type AppState = { todos: TodoProps[] };
 class AppComponent extends Component<AppState, {}> {
   state: AppState = { todos: [] };
 
@@ -52,24 +50,14 @@ class AppComponent extends Component<AppState, {}> {
   };
 
   render() {
-    return storeProvider.Context({
+    return appProvider.Context({
       todos: this.state.todos,
       addTodo: this.addTodo,
       deleteTodo: this.deleteTodo,
       toggleTodo: this.toggleTodo,
       content: [
         div({
-          content: [
-            // TodoForm({ addTodo: this.addTodo, key: "TodoForm" }),
-            TodoForm({ addTodo: this.addTodo, key: "TodoForm" }),
-            TodoList({
-              todos: this.state.todos,
-              actions: {
-                deleteTodo: this.deleteTodo,
-                toggleTodo: this.toggleTodo,
-              },
-            }),
-          ],
+          content: [TodoForm({ key: "TodoForm" }), TodoList()],
         }),
       ],
     });
@@ -78,18 +66,18 @@ class AppComponent extends Component<AppState, {}> {
 
 const App = Component.FC(AppComponent);
 
-type TodoFormProps = { addTodo: (name: string) => void };
-type TodoFormContext = { store: StoreProvider };
-
-class TodoFormComponent extends Component<{}, TodoFormProps, TodoFormContext> {
+type TodoFormContext = { app: AppProvider };
+class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
   state = { name: "" };
 
   render() {
+    const { addTodo } = this.context.app;
+
     return form({
       style: { display: "flex", gap: "4px", alignItems: "center" },
       onsubmit: (e: Event) => {
         e.preventDefault();
-        this.props.addTodo(this.state.name);
+        addTodo(this.state.name);
         this.setState({ name: "" });
       },
       content: [
@@ -109,38 +97,30 @@ class TodoFormComponent extends Component<{}, TodoFormProps, TodoFormContext> {
 }
 
 const TodoForm = Component.FC(TodoFormComponent, {
-  store: storeProvider,
+  app: appProvider,
 });
 
-const TodoList = FC<{ todos: TodoAttrs[]; actions: TodoActions }>(
-  ({ todos, actions }) => {
+type TodoListContext = { app: AppProvider };
+const TodoList = FC<{}, TodoListContext>(
+  (_, { app: { todos } }) => {
     return ul({
       style: { display: "flex", flexDirection: "column", gap: "4px" },
-      content: todos.map(todo =>
-        li({ content: [Todo({ ...todo, ...actions })] })
-      ),
+      content: todos.map(todo => li({ content: [Todo(todo)] })),
     });
-  }
+  },
+  { app: appProvider }
 );
 
-interface TodoAttrs {
+type TodoProps = {
   id: string;
   name: string;
   done: boolean;
-}
-
-interface TodoActions {
-  toggleTodo(id: string): void;
-  deleteTodo(id: string): void;
-}
-
-type TodoProps = TodoAttrs & TodoActions;
-type TodoContext = { store: StoreProvider };
+};
+type TodoContext = { app: AppProvider };
 
 const Todo = FC<TodoProps, TodoContext>(
-  (props, context) => {
-    console.log("access", context);
-    const { id, name, done, toggleTodo, deleteTodo } = props;
+  (props, { app: { toggleTodo, deleteTodo } }) => {
+    const { id, name, done } = props;
 
     return div({
       style: { display: "flex", gap: "4px", alignItems: "center" },
@@ -149,7 +129,7 @@ const Todo = FC<TodoProps, TodoContext>(
           onclick: () => deleteTodo(id),
           content: ["X"],
         }),
-        done ? Dummy({ done }) : Dummy2({ done }),
+        done,
         input({
           type: "checkbox",
           checked: done,
@@ -159,16 +139,8 @@ const Todo = FC<TodoProps, TodoContext>(
       ],
     });
   },
-  { store: storeProvider }
+  { app: appProvider }
 );
-
-const Dummy = FC<{ done: boolean }>(({ done }) => {
-  return b({ content: [done] });
-});
-
-const Dummy2 = FC<{ done: boolean }>(({ done }) => {
-  return i({ content: [done] });
-});
 
 const rxdom = new RxDOM();
 rxdom.render(App({ key: "root" }), document.getElementById("app")!);

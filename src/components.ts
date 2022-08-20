@@ -75,13 +75,11 @@ export class Component<
       return findAndRegister(fiber.parent);
     };
     findAndRegister(this.fiber.parent);
-    console.log("subscribed", this.unsubscribes);
 
     return context as C;
   }
 
   private removeContext() {
-    console.log("unsubscribed", this.unsubscribes);
     this.unsubscribes.forEach(unsub => unsub());
   }
 
@@ -119,6 +117,7 @@ export class Component<
 
   protected onUpdate() {}
   private update(node: RxComponent) {
+    this.fiber.node = node;
     const child = this.renderer.render(
       this.fiber,
       this.fiber.dom.parentNode as HTMLElement,
@@ -128,7 +127,6 @@ export class Component<
 
     this.fiber.dom = child.dom;
     this.fiber.content = [child];
-    this.fiber.node = node;
 
     setTimeout(() => this.onUpdate());
     return this.fiber;

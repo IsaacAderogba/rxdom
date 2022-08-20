@@ -32,7 +32,6 @@ export class ContextProvider<V extends Attrs = Attrs> {
   }
 
   private unregisterConsumer(provider: Provider, consumer: Consumer) {
-    console.log("unregister", this.providerConsumers.get(provider)?.get(consumer))
     this.providerConsumers.get(provider)!.delete(consumer);
   }
 
@@ -63,7 +62,6 @@ export class ContextComponent extends Component {
     for (const [_, callback] of consumers) {
       callback(value);
     }
-    console.log("update")
   }
 
   render() {
