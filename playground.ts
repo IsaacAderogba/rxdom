@@ -11,6 +11,8 @@ import {
   span,
   FC,
   createProvider,
+  b,
+  i,
 } from "./src";
 
 type StoreProvider = { hi: string };
@@ -140,7 +142,7 @@ const Todo = FC<TodoProps, TodoContext>(
           onclick: () => deleteTodo(id),
           content: ["X"],
         }),
-        done,
+        done ? Dummy({ done }) : Dummy2({ done }),
         input({
           type: "checkbox",
           checked: done,
@@ -152,6 +154,14 @@ const Todo = FC<TodoProps, TodoContext>(
   },
   { store: storeProvider }
 );
+
+const Dummy = FC<{ done: boolean }>(({ done }) => {
+  return b({ content: [done] });
+});
+
+const Dummy2 = FC<{ done: boolean }>(({ done }) => {
+  return i({ content: [done] });
+});
 
 const rxdom = new RxDOM();
 rxdom.render(App(), document.getElementById("app")!);

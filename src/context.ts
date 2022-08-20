@@ -12,7 +12,10 @@ export class ContextProvider<V extends Attrs = Attrs> {
   private providerConsumers: Map<Provider, Map<Consumer, Callback>> = new Map();
 
   registerProvider(provider: Provider): ContextUnsubscribe {
-    this.providerConsumers.set(provider, new Map());
+    if (!this.providerConsumers.has(provider)) {
+      this.providerConsumers.set(provider, new Map());
+    }
+    console.log("provider consumers", this.providerConsumers);
     return () => this.unregisterProvider(provider);
   }
 

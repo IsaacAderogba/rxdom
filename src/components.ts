@@ -7,19 +7,24 @@ import {
 import { Renderer } from "./renderers";
 import { ContentProps, Attrs, createContent, RequiredKeys } from "./utils";
 
+export type ComponentConfig = {
+  renderer: Renderer;
+  fiber: FiberComponent;
+};
+
 export class Component<
   S extends Attrs = Attrs,
   P extends Attrs = Attrs,
   C extends Attrs = Attrs
 > {
-  private renderer!: Renderer;
-  private template!: RxComponentTemplate<S, P, C>;
-  protected fiber!: FiberComponent;
+  private renderer: Renderer;
+  private template: RxComponentTemplate<S, P, C>;
+  protected fiber: FiberComponent;
   protected state: Readonly<S>;
   protected props: Readonly<P>;
   protected context: Readonly<C>;
 
-  constructor(renderer: Renderer, fiber: FiberComponent) {
+  constructor({ renderer, fiber }: ComponentConfig) {
     this.renderer = renderer;
     this.template = fiber.node.template;
 
@@ -27,10 +32,10 @@ export class Component<
     this.state = {} as S;
     this.props = fiber.node.props as P;
 
-    this.context = this.initContexts();
+    this.context = this.initContext();
   }
 
-  initContexts(): C {
+  initContext(): C {
     const { unsubscribes, provider, consumer } = this.fiber.node.context;
     if (provider) unsubscribes.push(provider.registerProvider(this.fiber));
 
@@ -64,6 +69,7 @@ export class Component<
   public unmount = () => {
     if (this.onUnmount) this.onUnmount();
     this.unregisterContexts();
+    console.log("unmount");
   };
 
   public onUpdate() {}

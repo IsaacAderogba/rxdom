@@ -27,13 +27,15 @@ export class SyncRenderer {
     } else if (!node) {
       // remove
       fiber.content.forEach(child => this.render(fiber, fiber.dom, child));
-      (fiber as FiberComponent).component?.unmount();
       fiber.dom.remove();
+      if ("component" in fiber) fiber.component.unmount();
       return;
     } else if (fiber.node.type !== node.type) {
       // replace
       const newFiber = this.construct(root, node);
       dom.replaceChild(newFiber.dom, fiber.dom);
+      fiber.content.forEach(child => this.render(fiber, fiber.dom, child));
+      if ("component" in fiber) fiber.component.unmount();
       return newFiber;
     } else if (node.type === "element") {
       // update element
@@ -44,6 +46,7 @@ export class SyncRenderer {
       return fiber;
     } else if (node.type === "component") {
       // update component
+      console.log(fiber.node, node);
       const cfiber = fiber as FiberComponent;
       return cfiber.component.setProps(node);
     } else {
@@ -86,7 +89,10 @@ export class SyncRenderer {
     if (node.type === "component") {
       const fiber = { node, parent, content: [] } as unknown as FiberComponent;
 
-      fiber.component = new node.template.constructor(this, fiber);
+      fiber.component = new node.template.constructor({
+        renderer: this,
+        fiber,
+      });
       const child = this.construct(fiber, fiber.component.render());
       fiber.dom = child.dom;
       fiber.content = [child];
