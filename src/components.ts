@@ -5,7 +5,13 @@ import {
   RxNode,
 } from "./models";
 import { Renderer } from "./renderers";
-import { ContentProps, Attrs, createContent, RequiredKeys } from "./utils";
+import {
+  ContentProps,
+  Attrs,
+  createContent,
+  RequiredKeys,
+  generateId,
+} from "./utils";
 
 export type ComponentConfig = {
   renderer: Renderer;
@@ -94,34 +100,37 @@ export class Component<
     return this.template.render(this.props, this.context);
   }
 
-  static FC =
-    <S extends Attrs, P extends Attrs, C extends Attrs>(
-      constructor: RxComponentTemplate<S, P, C>["constructor"],
-      consumer: Context<S, P, C>["consumer"] = {} as C
-    ) =>
-    (props: Props<P> = {} as P) =>
-      createComponent({ constructor }, { props, context: { consumer } });
+  static FC = <S extends Attrs, P extends Attrs, C extends Attrs>(
+    constructor: RxComponentTemplate<S, P, C>["constructor"],
+    consumer: Context<S, P, C>["consumer"] = {} as C
+  ) => {
+    const key = generateId();
+    return (props: Props<P> = {} as P) =>
+      createComponent({ constructor }, { props, key, context: { consumer } });
+  };
 }
 
-export const FC =
-  <P extends Attrs = Attrs, C extends Attrs = Attrs>(
-    render: RxComponentTemplate<{}, P, C>["render"],
-    consumer: Context<{}, P, C>["consumer"] = {} as C
-  ) =>
-  (props: Props<P> = {} as P) =>
+export const FC = <P extends Attrs = Attrs, C extends Attrs = Attrs>(
+  render: RxComponentTemplate<{}, P, C>["render"],
+  consumer: Context<{}, P, C>["consumer"] = {} as C
+) => {
+  const key = generateId();
+  return (props: Props<P> = {} as P) =>
     createComponent(
       { render, constructor: Component },
-      { props, context: { consumer } }
+      { props, key, context: { consumer } }
     );
+};
 
 export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
   template: RxComponentTemplate<S, P, C>,
-  options: { props: Props<P>; context: Context<S, P, C> }
+  options: { props: Props<P>; context: Context<S, P, C>; key: string }
 ): RxComponent => {
-  const { props, context } = options;
+  const { props, context, key } = options;
 
   return {
     type: "component",
+    key,
     props: { ...props, content: createContent(props) },
     context: { unsubscribes: [], ...context },
     template: { ...template },

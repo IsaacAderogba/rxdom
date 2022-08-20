@@ -2,7 +2,7 @@ import { RxFragment } from "./models";
 import { ContentProps, createContent, Attrs } from "./utils";
 
 type FragmentProps = Partial<
-Attrs &
+  Attrs &
     Partial<GlobalEventHandlers> & {
       style?: Partial<CSSStyleDeclaration>;
     } & ContentProps
@@ -10,10 +10,10 @@ Attrs &
 
 const createFragment = (
   type: RxFragment["type"],
-  props: FragmentProps
+  props: FragmentProps = {}
 ): RxFragment => {
   const content = createContent(props);
-  return { type, props: { ...props, content } };
+  return { type, key: type, props: { ...props, content } };
 };
 
 const fragment =

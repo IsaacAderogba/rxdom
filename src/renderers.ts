@@ -30,7 +30,7 @@ export class SyncRenderer {
       fiber.dom.remove();
       if ("component" in fiber) fiber.component.unmount();
       return;
-    } else if (fiber.node.type !== node.type) {
+    } else if (fiber.node.key !== node.key) {
       // replace
       const newFiber = this.construct(root, node);
       dom.replaceChild(newFiber.dom, fiber.dom);
@@ -39,14 +39,11 @@ export class SyncRenderer {
       return newFiber;
     } else if (node.type === "element") {
       // update element
-      if (node.template.onUpdate) {
-        fiber.dom = node.template.onUpdate({ fiber, dom: node.template.dom });
-      }
+      fiber.dom = node.template.onUpdate({ fiber, dom: node.template.dom });
       fiber.node = node;
       return fiber;
     } else if (node.type === "component") {
       // update component
-      console.log(fiber.node, node);
       const cfiber = fiber as FiberComponent;
       return cfiber.component.setProps(node);
     } else {

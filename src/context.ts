@@ -1,7 +1,7 @@
 import { Component, createComponent } from "./components";
 import { div } from "./fragments";
 import { FiberComponent, RxComponent } from "./models";
-import { ContentProps, Attrs } from "./utils";
+import { ContentProps, Attrs, generateId } from "./utils";
 
 type Provider = FiberComponent;
 type Consumer = FiberComponent;
@@ -9,6 +9,7 @@ type Callback = (fiber: FiberComponent) => void;
 export type ContextUnsubscribe = () => void;
 
 export class ContextProvider<V extends Attrs = Attrs> {
+  private key = generateId();
   private providerConsumers: Map<Provider, Map<Consumer, Callback>> = new Map();
 
   registerProvider(provider: Provider): ContextUnsubscribe {
@@ -39,7 +40,7 @@ export class ContextProvider<V extends Attrs = Attrs> {
   Context(props: ContentProps & V): RxComponent {
     return createComponent(
       { constructor: Component, render: props => div(props) },
-      { props, context: { provider: this, consumer: {} } }
+      { props, key: this.key, context: { provider: this, consumer: {} } }
     );
   }
 }

@@ -5,8 +5,9 @@ export const createContent = ({ content = [] }: ContentProps) =>
   content.map(c => (typeof c === "object" ? c : textFragment(c)));
 
 type TextFragment = string | number | boolean;
-const textFragment = (text: TextFragment): RxFragment => ({
+const textFragment = (text: TextFragment, key = "text"): RxFragment => ({
   type: "text",
+  key,
   props: { nodeValue: text.toString(), content: [] },
 });
 
@@ -54,3 +55,7 @@ export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type OptionalPick<T, K extends keyof T> = Partial<Pick<T, K>>;
 export type RequiredKeys<T, K extends keyof T> = Partial<T> &
   Required<OptionalPick<T, K>>;
+
+export const generateId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};

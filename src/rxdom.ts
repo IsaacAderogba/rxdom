@@ -1,10 +1,5 @@
-import {
-  DOMElement,
-  FiberElement,
-  FiberInstance,
-  RxElement,
-  RxNode,
-} from "./models";
+import { createElement } from "./elements";
+import { DOMElement, FiberElement, FiberInstance, RxNode } from "./models";
 import { Renderer, SyncRenderer } from "./renderers";
 
 export class RxDOM {
@@ -26,11 +21,6 @@ export class RxDOM {
   }
 
   private createRoot(dom: DOMElement): FiberElement {
-    const node: RxElement = {
-      props: { content: [] },
-      template: { dom },
-      type: "element",
-    };
-    return { dom, content: [], node };
+    return { dom, content: [], node: createElement({ dom }) };
   }
 }

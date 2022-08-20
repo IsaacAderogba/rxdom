@@ -3,6 +3,7 @@ import { ContextProvider, ContextUnsubscribe } from "./context";
 import { Attrs, ValueOf } from "./utils";
 
 interface RxBase {
+  key: string;
   props: Attrs & { content: RxNode[] };
 }
 
@@ -29,7 +30,7 @@ export interface RxFragment extends RxBase {
 export interface RxElement extends RxBase {
   type: "element";
   template: {
-    onUpdate?: (props: { fiber: FiberInstance; dom: DOMElement }) => DOMElement;
+    onUpdate: (props: { fiber: FiberInstance; dom: DOMElement }) => DOMElement;
     dom: DOMElement;
   };
 }
