@@ -63,8 +63,8 @@ export class Component<
         if (key) {
           consumers.delete(contextProvider);
           this.unsubscribes.push(
-            contextProvider.registerConsumer(fiber, this.fiber, context =>
-              this.setContext(context as C)
+            contextProvider.registerConsumer(fiber, this.fiber, slice =>
+              this.setContext(prev => ({ ...prev, [key]: slice }))
             )
           );
 
@@ -85,14 +85,16 @@ export class Component<
     this.unsubscribes.forEach(unsub => unsub());
   }
 
-  setContext(context: C) {
-    this.context = context;
+  setContext(update: C | ((c: C) => C)) {
+    this.context =
+      // @ts-ignore
+      typeof update === "function" ? update(this.context) : update;
     this.update(this.fiber.node);
   }
 
-  setState(state: S | ((s: S) => S)) {
+  setState(update: S | ((s: S) => S)) {
     // @ts-ignore
-    this.state = typeof state === "function" ? state(this.state) : state;
+    this.state = typeof update === "function" ? update(this.state) : update;
     this.update(this.fiber.node);
   }
 

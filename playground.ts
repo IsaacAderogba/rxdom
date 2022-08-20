@@ -15,14 +15,20 @@ import {
   i,
 } from "./src";
 
-type StoreProvider = { hi: string };
+type StoreProvider = {
+  todos: TodoAttrs[];
+  addTodo: (name: string) => void;
+  toggleTodo: (id: string) => void;
+  deleteTodo: (id: string) => void;
+};
+
 const storeProvider = createProvider<StoreProvider>();
 
 type AppState = { todos: TodoAttrs[] };
 class AppComponent extends Component<AppState, {}> {
   state: AppState = { todos: [] };
 
-  addItem = (name: string) => {
+  addTodo = (name: string) => {
     this.setState(prev => ({
       todos: [...prev.todos, { id: Date.now().toString(), done: false, name }],
     }));
@@ -47,12 +53,15 @@ class AppComponent extends Component<AppState, {}> {
 
   render() {
     return storeProvider.Context({
-      hi: "hi",
+      todos: this.state.todos,
+      addTodo: this.addTodo,
+      deleteTodo: this.deleteTodo,
+      toggleTodo: this.toggleTodo,
       content: [
         div({
           content: [
-            // TodoForm({ addItem: this.addItem, key: "TodoForm" }),
-            TodoForm({ addItem: this.addItem, key: "TodoForm" }),
+            // TodoForm({ addTodo: this.addTodo, key: "TodoForm" }),
+            TodoForm({ addTodo: this.addTodo, key: "TodoForm" }),
             TodoList({
               todos: this.state.todos,
               actions: {
@@ -69,7 +78,7 @@ class AppComponent extends Component<AppState, {}> {
 
 const App = Component.FC(AppComponent);
 
-type TodoFormProps = { addItem: (name: string) => void };
+type TodoFormProps = { addTodo: (name: string) => void };
 type TodoFormContext = { store: StoreProvider };
 
 class TodoFormComponent extends Component<{}, TodoFormProps, TodoFormContext> {
@@ -80,7 +89,7 @@ class TodoFormComponent extends Component<{}, TodoFormProps, TodoFormContext> {
       style: { display: "flex", gap: "4px", alignItems: "center" },
       onsubmit: (e: Event) => {
         e.preventDefault();
-        this.props.addItem(this.state.name);
+        this.props.addTodo(this.state.name);
         this.setState({ name: "" });
       },
       content: [
@@ -130,6 +139,7 @@ type TodoContext = { store: StoreProvider };
 
 const Todo = FC<TodoProps, TodoContext>(
   (props, context) => {
+    console.log("access", context);
     const { id, name, done, toggleTodo, deleteTodo } = props;
 
     return div({

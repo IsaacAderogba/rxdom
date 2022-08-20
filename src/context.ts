@@ -63,6 +63,7 @@ export class ContextComponent extends Component {
     for (const [_, callback] of consumers) {
       callback(value);
     }
+    console.log("update")
   }
 
   render() {
