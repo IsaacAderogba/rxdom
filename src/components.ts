@@ -38,7 +38,6 @@ export class Component<
     this.fiber = fiber;
     this.state = {} as S;
     this.props = fiber.node.props as P;
-
     this.context = this.initContext();
   }
 
@@ -61,7 +60,9 @@ export class Component<
         if (key) {
           consumers.delete(contextProvider);
           unsubscribes.push(
-            contextProvider.registerConsumer(fiber, this.fiber, () => {})
+            contextProvider.registerConsumer(fiber, this.fiber, () => {
+              console.log("callback", this);
+            })
           );
 
           context[key] = contextProvider.getValue(fiber);
@@ -71,11 +72,13 @@ export class Component<
       return findAndRegister(fiber.parent);
     };
     findAndRegister(this.fiber.parent);
+    console.log("added", this.fiber, this.fiber.node.context.unsubscribes);
 
     return context as C;
   }
 
   private removeContext() {
+    console.log("removing", this.fiber.node.context.unsubscribes);
     this.fiber.node.context.unsubscribes.forEach(unsub => unsub());
   }
 
@@ -115,7 +118,7 @@ export class Component<
 
     this.fiber.dom = child.dom;
     this.fiber.content = [child];
-    this.fiber.node = node;
+    this.fiber.node = node.context;
 
     setTimeout(() => this.onUpdate());
     return this.fiber;

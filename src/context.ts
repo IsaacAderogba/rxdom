@@ -5,18 +5,17 @@ import { NodeProps, Attrs, generateId, omit } from "./utils";
 
 type Provider = FiberComponent;
 type Consumer = FiberComponent;
-type Callback = (fiber: FiberComponent) => void;
+type Callback = (attrs: Attrs) => void;
 export type ContextUnsubscribe = () => void;
 
 export class ContextProvider<V extends Attrs = Attrs> {
   private key = generateId();
-  private providerConsumers: Map<Provider, Map<Consumer, Callback>> = new Map();
+  providerConsumers: Map<Provider, Map<Consumer, Callback>> = new Map();
 
   registerProvider(provider: Provider): ContextUnsubscribe {
     if (!this.providerConsumers.has(provider)) {
       this.providerConsumers.set(provider, new Map());
     }
-    console.log("registerProvider", this.providerConsumers);
     return () => this.unregisterProvider(provider);
   }
 
@@ -30,11 +29,11 @@ export class ContextProvider<V extends Attrs = Attrs> {
     cb: Callback
   ): ContextUnsubscribe {
     this.providerConsumers.get(provider)!.set(consumer, cb);
-    console.log("registerConsumer", this.providerConsumers);
     return () => this.unregisterConsumer(provider, consumer);
   }
 
   private unregisterConsumer(provider: Provider, consumer: Consumer) {
+    console.log("unregister", this.providerConsumers.get(provider)?.get(consumer))
     this.providerConsumers.get(provider)!.delete(consumer);
   }
 
@@ -44,12 +43,32 @@ export class ContextProvider<V extends Attrs = Attrs> {
 
   Context(props: NodeProps & V): RxComponent {
     return createComponent(
-      { constructor: Component, render: props => context(props) },
+      { constructor: ContextComponent },
       {
         props: { key: this.key, ...props },
         context: { provider: this, consumer: {} },
       }
     );
+  }
+}
+
+export class ContextComponent extends Component {
+  emitValues() {
+    const provider = this.fiber.node.context.provider;
+    if (!provider) return;
+
+    const consumers = provider.providerConsumers.get(this.fiber);
+    if (!consumers) return;
+
+    const value = provider.getValue(this.fiber);
+    for (const [_, callback] of consumers) {
+      callback(value);
+    }
+  }
+
+  render() {
+    this.emitValues();
+    return context(this.props);
   }
 }
 

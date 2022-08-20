@@ -22,10 +22,6 @@ type AppState = { todos: TodoAttrs[] };
 class AppComponent extends Component<AppState, {}> {
   state: AppState = { todos: [] };
 
-  onUpdate() {
-    console.log(this);
-  }
-
   addItem = (name: string) => {
     this.setState(prev => ({
       todos: [...prev.todos, { id: Date.now().toString(), done: false, name }],
@@ -55,7 +51,7 @@ class AppComponent extends Component<AppState, {}> {
       content: [
         div({
           content: [
-            TodoForm({ addItem: this.addItem, key: "TodoForm" }),
+            // TodoForm({ addItem: this.addItem, key: "TodoForm" }),
             TodoForm({ addItem: this.addItem, key: "TodoForm" }),
             TodoList({
               todos: this.state.todos,
@@ -135,7 +131,6 @@ type TodoContext = { store: StoreProvider };
 const Todo = FC<TodoProps, TodoContext>(
   (props, context) => {
     const { id, name, done, toggleTodo, deleteTodo } = props;
-    console.log("todo context", context);
 
     return div({
       style: { display: "flex", gap: "4px", alignItems: "center" },
