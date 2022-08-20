@@ -133,8 +133,9 @@ type TodoProps = TodoAttrs & TodoActions;
 type TodoContext = { store: StoreProvider };
 
 const Todo = FC<TodoProps, TodoContext>(
-  props => {
+  (props, context) => {
     const { id, name, done, toggleTodo, deleteTodo } = props;
+    console.log("todo context", context);
 
     return div({
       style: { display: "flex", gap: "4px", alignItems: "center" },

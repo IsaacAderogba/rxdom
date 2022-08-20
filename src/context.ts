@@ -1,7 +1,7 @@
 import { Component, createComponent } from "./components";
 import { context } from "./fragments";
 import { FiberComponent, RxComponent } from "./models";
-import { NodeProps, Attrs, generateId } from "./utils";
+import { NodeProps, Attrs, generateId, omit } from "./utils";
 
 type Provider = FiberComponent;
 type Consumer = FiberComponent;
@@ -16,7 +16,7 @@ export class ContextProvider<V extends Attrs = Attrs> {
     if (!this.providerConsumers.has(provider)) {
       this.providerConsumers.set(provider, new Map());
     }
-    console.log("provider consumers", this.providerConsumers);
+    console.log("registerProvider", this.providerConsumers);
     return () => this.unregisterProvider(provider);
   }
 
@@ -30,11 +30,16 @@ export class ContextProvider<V extends Attrs = Attrs> {
     cb: Callback
   ): ContextUnsubscribe {
     this.providerConsumers.get(provider)!.set(consumer, cb);
+    console.log("registerConsumer", this.providerConsumers);
     return () => this.unregisterConsumer(provider, consumer);
   }
 
   private unregisterConsumer(provider: Provider, consumer: Consumer) {
     this.providerConsumers.get(provider)!.delete(consumer);
+  }
+
+  getValue(provider: Provider) {
+    return omit(provider.node.props, ["key", "content"]);
   }
 
   Context(props: NodeProps & V): RxComponent {

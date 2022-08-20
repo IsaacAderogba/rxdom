@@ -1,5 +1,6 @@
 import {
   FiberComponent,
+  FiberInstance,
   RxComponent,
   RxComponentTemplate,
   RxNode,
@@ -42,10 +43,36 @@ export class Component<
   }
 
   private initContext(): C {
+    // register provider
     const { unsubscribes, provider, consumer } = this.fiber.node.context;
     if (provider) unsubscribes.push(provider.registerProvider(this.fiber));
 
-    // todo
+    // register consumers
+    const consumers = new Map(Object.entries(consumer).map(([k, v]) => [v, k]));
+    const context: Attrs = {};
+
+    const findAndRegister = (fiber?: FiberInstance): void => {
+      if (!fiber) return;
+
+      if ("component" in fiber && fiber.node.context.provider) {
+        const contextProvider = fiber.node.context.provider;
+        const key = consumers.get(contextProvider);
+
+        if (key) {
+          consumers.delete(contextProvider);
+          unsubscribes.push(
+            contextProvider.registerConsumer(fiber, this.fiber, () => {})
+          );
+
+          context[key] = contextProvider.getValue(fiber);
+        }
+      }
+
+      return findAndRegister(fiber.parent);
+    };
+    findAndRegister(this.fiber.parent);
+
+    return context as C;
   }
 
   private removeContext() {
@@ -65,7 +92,6 @@ export class Component<
 
   protected onMount(): void | (() => void) {}
   public mount() {
-    console.log("mount");
     setTimeout(() => {
       const onUnmount = this.onMount();
       if (onUnmount) this.onUnmount = onUnmount;
@@ -76,7 +102,6 @@ export class Component<
   public unmount() {
     if (this.onUnmount) this.onUnmount();
     this.removeContext();
-    console.log("unmount");
   }
 
   protected onUpdate() {}

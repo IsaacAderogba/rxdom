@@ -59,13 +59,16 @@ export const isNew = (prev: Attrs, next: Attrs) => (key: string) =>
 export const isGone = (_prev: Attrs, next: Attrs) => (key: string) =>
   !(key in next);
 
+export const generateId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};
+
+export const omit = (obj: Attrs, keys: string[]) =>
+  Object.fromEntries(Object.entries(obj).filter(([k]) => !keys.includes(k)));
+
 export type Attrs = Record<string, any>;
 export type ValueOf<T> = T[keyof T];
 export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type OptionalPick<T, K extends keyof T> = Partial<Pick<T, K>>;
 export type RequiredKeys<T, K extends keyof T> = Partial<T> &
   Required<OptionalPick<T, K>>;
-
-export const generateId = () => {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2);
-};
