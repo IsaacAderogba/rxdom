@@ -41,14 +41,14 @@ export class Component<
     this.context = this.initContext();
   }
 
-  initContext(): C {
+  private initContext(): C {
     const { unsubscribes, provider, consumer } = this.fiber.node.context;
     if (provider) unsubscribes.push(provider.registerProvider(this.fiber));
 
     // todo
   }
 
-  unregisterContexts() {
+  private unregisterContexts() {
     this.fiber.node.context.unsubscribes.forEach(unsub => unsub());
   }
 
@@ -63,8 +63,8 @@ export class Component<
     return this.update(node);
   }
 
-  public onMount(): void | (() => void) {}
-  mount() {
+  protected onMount(): void | (() => void) {}
+  public mount() {
     setTimeout(() => {
       const onUnmount = this.onMount();
       if (onUnmount) this.onUnmount = onUnmount;
@@ -72,13 +72,13 @@ export class Component<
   }
 
   private onUnmount(): void | (() => void) {}
-  public unmount = () => {
+  public unmount() {
     if (this.onUnmount) this.onUnmount();
     this.unregisterContexts();
     console.log("unmount");
-  };
+  }
 
-  public onUpdate() {}
+  protected onUpdate() {}
   private update(node: RxComponent) {
     const child = this.renderer.render(
       this.fiber,
