@@ -105,12 +105,8 @@ export class Component<
     constructor: RxComponentTemplate<S, P, C>["constructor"],
     consumer: Context<S, P, C>["consumer"] = {} as C
   ) => {
-    const key = generateId();
-    return (props: Props<P> = {} as P) =>
-      createComponent(
-        { constructor },
-        { props: { key, ...props }, context: { consumer } }
-      );
+    return (props: Props<P> & { key: string }) =>
+      createComponent({ constructor }, { props, context: { consumer } });
   };
 }
 

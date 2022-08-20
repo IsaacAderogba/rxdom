@@ -23,7 +23,7 @@ export type RxComponentTemplate<S, P, C> = {
   render?: (props: P, context: C) => RxNode;
 };
 export interface RxFragment extends RxBase {
-  type: keyof HTMLElementTagNameMap | "text";
+  type: keyof HTMLElementTagNameMap | "text" | "context";
 }
 
 export interface RxElement extends RxBase {

@@ -1,5 +1,5 @@
 import { Component, createComponent } from "./components";
-import { div } from "./fragments";
+import { context } from "./fragments";
 import { FiberComponent, RxComponent } from "./models";
 import { NodeProps, Attrs, generateId } from "./utils";
 
@@ -39,18 +39,12 @@ export class ContextProvider<V extends Attrs = Attrs> {
 
   Context(props: NodeProps & V): RxComponent {
     return createComponent(
-      { constructor: ContextProviderComponent },
+      { constructor: Component, render: props => context(props) },
       {
         props: { key: this.key, ...props },
         context: { provider: this, consumer: {} },
       }
     );
-  }
-}
-
-class ContextProviderComponent extends Component {
-  render() {
-    return div(this.props);
   }
 }
 

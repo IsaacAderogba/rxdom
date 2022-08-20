@@ -5,6 +5,7 @@ import {
   FiberElement,
   FiberFragment,
   FiberInstance,
+  RxComponent,
   RxNode,
 } from "./models";
 import { updateDomProps } from "./utils";
@@ -107,9 +108,31 @@ export class SyncRenderer {
     updateDomProps(dom, {}, node.props);
 
     const fiber: FiberFragment = { dom, node, content: [], parent };
+    this.warnDuplicateKeys(fiber, node.props.content);
     fiber.content = node.props.content.map(c => this.construct(fiber, c));
     fiber.content.forEach(child => dom.appendChild(child.dom));
 
     return fiber;
   };
+
+  private warnDuplicateKeys(parent: FiberInstance, nodes: RxNode[]) {
+    const customComponents = nodes.filter(
+      n => n.type === "component" && n.template.constructor !== Component
+    ) as RxComponent[];
+
+    const dups: Map<string, { name: string; count: number }> = new Map();
+    customComponents.forEach(({ template: { constructor }, props }) => {
+      const dup = dups.get(props.key) || { name: constructor.name, count: 0 };
+      dups.set(props.key, { ...dup, count: dup.count + 1 });
+    });
+
+    for (const [key, { count, name }] of dups) {
+      if (count > 1) {
+        console.warn(
+          `Each class component in a 'content' list should have a unique 'key' prop (detected ${count} ${name}s with key ${key}).`,
+          parent
+        );
+      }
+    }
+  }
 }

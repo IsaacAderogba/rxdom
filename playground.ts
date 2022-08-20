@@ -55,7 +55,8 @@ class AppComponent extends Component<AppState, {}> {
       content: [
         div({
           content: [
-            TodoForm({ addItem: this.addItem }),
+            TodoForm({ addItem: this.addItem, key: "TodoForm" }),
+            TodoForm({ addItem: this.addItem, key: "TodoForm" }),
             TodoList({
               todos: this.state.todos,
               actions: {
@@ -164,4 +165,4 @@ const Dummy2 = FC<{ done: boolean }>(({ done }) => {
 });
 
 const rxdom = new RxDOM();
-rxdom.render(App(), document.getElementById("app")!);
+rxdom.render(App({ key: "root" }), document.getElementById("app")!);
