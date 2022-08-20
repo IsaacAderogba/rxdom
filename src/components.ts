@@ -63,9 +63,9 @@ export class Component<
         if (key) {
           consumers.delete(contextProvider);
           this.unsubscribes.push(
-            contextProvider.registerConsumer(fiber, this.fiber, () => {
-              console.log("callback");
-            })
+            contextProvider.registerConsumer(fiber, this.fiber, context =>
+              this.setContext(context as C)
+            )
           );
 
           context[key] = contextProvider.getValue(fiber);
@@ -83,6 +83,11 @@ export class Component<
   private removeContext() {
     console.log("unsubscribed", this.unsubscribes);
     this.unsubscribes.forEach(unsub => unsub());
+  }
+
+  setContext(context: C) {
+    this.context = context;
+    this.update(this.fiber.node);
   }
 
   setState(state: S | ((s: S) => S)) {
