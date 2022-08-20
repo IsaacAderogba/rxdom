@@ -10,82 +10,23 @@ import {
   input,
   span,
   FC,
+  createProvider,
 } from "./src";
 
-interface TodoAttrs {
-  id: string;
-  name: string;
-  done: boolean;
-}
+type AppProvider = {
+  todos: TodoProps[];
+  addTodo: (name: string) => void;
+  toggleTodo: (id: string) => void;
+  deleteTodo: (id: string) => void;
+};
 
-interface TodoActions {
-  toggleTodo(id: string): void;
-  deleteTodo(id: string): void;
-}
+const appProvider = createProvider<AppProvider>();
 
-type TodoProps = TodoAttrs & TodoActions;
-
-const Todo = FC<TodoProps>(props => {
-  const { id, name, done, toggleTodo, deleteTodo } = props;
-
-  return div({
-    style: { display: "flex", gap: "4px", alignItems: "center" },
-    content: [
-      button({
-        onclick: () => deleteTodo(id),
-        content: ["X"],
-      }),
-      input({ type: "checkbox", value: done, onclick: () => toggleTodo(id) }),
-      span({ content: [name] }),
-    ],
-  });
-});
-
-const TodoList = FC<{ todos: TodoAttrs[]; actions: TodoActions }>(
-  ({ todos, actions }) => {
-    return ul({
-      style: { display: "flex", flexDirection: "column", gap: "4px" },
-      content: todos.map(todo =>
-        li({ content: [Todo({ ...todo, ...actions })] })
-      ),
-    });
-  }
-);
-
-class TodoFormComponent extends Component<{ addItem: (name: string) => void }> {
-  state = { name: "" };
-
-  render() {
-    return form({
-      style: { display: "flex", gap: "4px", alignItems: "center" },
-      onsubmit: (e: Event) => {
-        e.preventDefault();
-        this.props.addItem(this.state.name);
-        this.setState({ name: "" });
-      },
-      content: [
-        label({
-          for: "i-n",
-          content: ["Add new item"],
-        }),
-        input({
-          id: "i-n",
-          value: this.state.name,
-          oninput: (e: any) =>
-            this.setState(s => ({ ...s, name: e.target.value })),
-        }),
-      ],
-    });
-  }
-}
-
-const TodoForm = Component.FC(TodoFormComponent);
-
-type AppState = { todos: TodoAttrs[] };
-class AppComponent extends Component<{}, AppState> {
+type AppState = { todos: TodoProps[] };
+class AppComponent extends Component<AppState, {}> {
   state: AppState = { todos: [] };
 
-  addItem = (name: string) => {
+  addTodo = (name: string) => {
     this.setState(prev => ({
       todos: [...prev.todos, { id: Date.now().toString(), done: false, name }],
     }));
@@ -109,12 +50,14 @@ class AppComponent extends Component<{}, AppState> {
   };
 
   render() {
-    return div({
+    return appProvider.Context({
+      todos: this.state.todos,
+      addTodo: this.addTodo,
+      deleteTodo: this.deleteTodo,
+      toggleTodo: this.toggleTodo,
       content: [
-        TodoForm({ addItem: this.addItem }),
-        TodoList({
-          todos: this.state.todos,
-          actions: { deleteTodo: this.deleteTodo, toggleTodo: this.toggleTodo },
+        div({
+          content: [TodoForm({ key: "TodoForm" }), TodoList()],
         }),
       ],
     });
@@ -123,5 +66,81 @@ class AppComponent extends Component<{}, AppState> {
 
 const App = Component.FC(AppComponent);
 
+type TodoFormContext = { app: AppProvider };
+class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
+  state = { name: "" };
+
+  render() {
+    const { addTodo } = this.context.app;
+
+    return form({
+      style: { display: "flex", gap: "4px", alignItems: "center" },
+      onsubmit: (e: Event) => {
+        e.preventDefault();
+        addTodo(this.state.name);
+        this.setState({ name: "" });
+      },
+      content: [
+        label({
+          for: "i-n",
+          content: ["Add new item"],
+        }),
+        input({
+          id: "i-n",
+          value: this.state.name,
+          oninput: (e: any) =>
+            this.setState(s => ({ ...s, name: e.target.value })),
+        }),
+      ],
+    });
+  }
+}
+
+const TodoForm = Component.FC(TodoFormComponent, {
+  app: appProvider,
+});
+
+type TodoListContext = { app: AppProvider };
+const TodoList = FC<{}, TodoListContext>(
+  (_, { app: { todos } }) => {
+    return ul({
+      style: { display: "flex", flexDirection: "column", gap: "4px" },
+      content: todos.map(todo => li({ content: [Todo(todo)] })),
+    });
+  },
+  { app: appProvider }
+);
+
+type TodoProps = {
+  id: string;
+  name: string;
+  done: boolean;
+};
+type TodoContext = { app: AppProvider };
+
+const Todo = FC<TodoProps, TodoContext>(
+  (props, { app: { toggleTodo, deleteTodo } }) => {
+    const { id, name, done } = props;
+
+    return div({
+      style: { display: "flex", gap: "4px", alignItems: "center" },
+      content: [
+        button({
+          onclick: () => deleteTodo(id),
+          content: ["X"],
+        }),
+        done,
+        input({
+          type: "checkbox",
+          checked: done,
+          onclick: () => toggleTodo(id),
+        }),
+        span({ content: [name] }),
+      ],
+    });
+  },
+  { app: appProvider }
+);
+
 const rxdom = new RxDOM();
-rxdom.render(App(), document.getElementById("app")!);
+rxdom.render(App({ key: "root" }), document.getElementById("app")!);

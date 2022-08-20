@@ -1,13 +1,10 @@
-import { DOMElement, RxElement } from "./models";
+import { RxElement } from "./models";
+import { createNodeProps, RequiredKeys } from "./utils";
 
-export const createElement = (props: ElementProps): RxElement => ({
-  element: props.updater,
-  dom: props.dom,
+export const createElement = (
+  template: RequiredKeys<RxElement["template"], "dom">
+): RxElement => ({
   type: "element",
-  props: { content: [] },
+  props: createNodeProps({}),
+  template: { onUpdate: () => template.dom, ...template },
 });
-
-type ElementProps = {
-  dom: DOMElement;
-  updater?: RxElement["element"];
-};

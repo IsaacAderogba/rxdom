@@ -1,4 +1,5 @@
-import { DOMElement, FiberInstance, RxNode } from "./models";
+import { createElement } from "./elements";
+import { DOMElement, FiberElement, FiberInstance, RxNode } from "./models";
 import { Renderer, SyncRenderer } from "./renderers";
 
 export class RxDOM {
@@ -9,9 +10,17 @@ export class RxDOM {
     this.renderer = renderer;
   }
 
-  render(node: RxNode, container: DOMElement) {
+  render(node: RxNode, dom: DOMElement) {
     const prevFiber = this.fiber;
-    const nextFiber = this.renderer.reconcile(container, prevFiber, node);
-    this.fiber = nextFiber;
+    this.fiber = this.renderer.render(
+      this.createRoot(dom),
+      dom,
+      prevFiber,
+      node
+    );
+  }
+
+  private createRoot(dom: DOMElement): FiberElement {
+    return { dom, content: [], node: createElement({ dom }) };
   }
 }

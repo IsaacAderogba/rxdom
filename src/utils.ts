@@ -1,19 +1,30 @@
 import { DOMElement, RxFragment, RxNode } from "./models";
 
-export type ContentProps = { content?: (RxNode | TextFragment)[] };
-export const createContent = ({ content = [] }: ContentProps) =>
-  content.map(c => (typeof c === "object" ? c : textFragment(c)));
+export type NodeProps = {
+  content?: (RxNode | TextFragment)[];
+  key?: string;
+} & Attrs;
+
+export const createNodeProps = ({
+  content = [],
+  key = generateId(),
+  ...props
+}: NodeProps) => ({
+  ...props,
+  content: content.map(c => (typeof c === "object" ? c : textFragment(c))),
+  key,
+});
 
 type TextFragment = string | number | boolean;
 const textFragment = (text: TextFragment): RxFragment => ({
   type: "text",
-  props: { nodeValue: text.toString(), content: [] },
+  props: { nodeValue: text.toString(), content: [], key: "text" },
 });
 
 export function updateDomProps(
   dom: DOMElement,
-  prevProps: Object,
-  nextProps: Object
+  prevProps: Attrs,
+  nextProps: Attrs
 ) {
   // attrs
   Object.keys(prevProps)
@@ -41,11 +52,25 @@ export function updateDomProps(
   }
 }
 
-export type Object = Record<string, any>;
-
 export const isStyle = (key: string) => key === "style";
 export const isAttr = (key: string) => key !== "content" && !isStyle(key);
-export const isNew = (prev: Object, next: Object) => (key: string) =>
+export const isNew = (prev: Attrs, next: Attrs) => (key: string) =>
   prev[key] !== next[key];
-export const isGone = (_prev: Object, next: Object) => (key: string) =>
+export const isGone = (_prev: Attrs, next: Attrs) => (key: string) =>
   !(key in next);
+
+export const generateId = () => {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+};
+
+export const omit = (obj: Attrs, keys: string[]) =>
+  Object.fromEntries(Object.entries(obj).filter(([k]) => !keys.includes(k)));
+
+export type Attrs = Record<string, any>;
+export type ValueOf<T> = T[keyof T];
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+export type OptionalPick<T, K extends keyof T> = Partial<Pick<T, K>>;
+export type RequiredKeys<T, K extends keyof T> = Partial<T> &
+  Required<OptionalPick<T, K>>;
+
+export type Unsubscribe = () => void;

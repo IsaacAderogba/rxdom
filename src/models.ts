@@ -1,45 +1,59 @@
-import { Component } from "./components";
-import { Object } from "./utils";
+import { Component, ComponentConfig } from "./components";
+import { ContextProvider } from "./context";
+import { Attrs, ValueOf } from "./utils";
 
-export interface RxComponent {
+interface RxBase {
+  props: Attrs & { content: RxNode[]; key: string };
+}
+
+export interface RxComponent<S = any, P = any, C = any> extends RxBase {
   type: "component";
-  props: Object & { content: RxNode[] };
-  component: { new (props: any): Component };
+  context: {
+    provider?: ContextProvider;
+    consumer: Record<keyof C, ContextProvider<ValueOf<C>>>;
+  };
+  template: RxComponentTemplate<S, P, C>;
 }
 
-export interface RxFragment {
-  type: keyof HTMLElementTagNameMap | "text";
-  props: Object & { content: RxNode[] };
+export type RxComponentTemplate<S, P, C> = {
+  constructor: {
+    new (config: ComponentConfig): Component<S, P, C>;
+  };
+  render?: (props: P, context: C) => RxNode;
+};
+export interface RxFragment extends RxBase {
+  type: keyof HTMLElementTagNameMap | "text" | "context";
 }
 
-export interface RxElement {
+export interface RxElement extends RxBase {
   type: "element";
-  props: Object & { content: RxNode[] };
-  element?: (props: { fiber: FiberElement; dom: DOMElement }) => DOMElement;
-  dom: DOMElement;
+  template: {
+    onUpdate: (props: { fiber: FiberInstance; dom: DOMElement }) => DOMElement;
+    dom: DOMElement;
+  };
 }
 
-export type RxNode =  RxFragment | RxComponent | RxElement;
+export type RxNode = RxFragment | RxComponent | RxElement;
 
 export type DOMElement = HTMLElement | Text;
 
-export type FiberComponent = {
+interface FiberBase {
   dom: DOMElement;
-  node: RxNode;
+  parent?: FiberInstance;
   content: FiberInstance[];
+}
+
+export interface FiberComponent extends FiberBase {
   component: Component;
-};
+  node: RxComponent;
+}
 
-export type FiberFragment = {
-  dom: DOMElement;
-  node: RxNode;
-  content: FiberInstance[];
-};
+export interface FiberFragment extends FiberBase {
+  node: RxFragment;
+}
 
-export type FiberElement = {
-  dom: DOMElement;
-  node: RxNode;
-  content: FiberInstance[];
-};
+export interface FiberElement extends FiberBase {
+  node: RxElement;
+}
 
 export type FiberInstance = FiberComponent | FiberFragment | FiberElement;

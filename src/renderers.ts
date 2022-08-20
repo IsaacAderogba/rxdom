@@ -1,14 +1,19 @@
+import { Component } from "./components";
+import { ContextComponent } from "./context";
 import {
   DOMElement,
   FiberComponent,
+  FiberElement,
   FiberFragment,
   FiberInstance,
+  RxComponent,
   RxNode,
 } from "./models";
 import { updateDomProps } from "./utils";
 
 export interface Renderer {
-  reconcile: (
+  render: (
+    root: FiberInstance,
     dom: DOMElement,
     fiber?: FiberInstance,
     node?: RxNode
@@ -16,26 +21,28 @@ export interface Renderer {
 }
 
 export class SyncRenderer {
-  reconcile: Renderer["reconcile"] = (dom, fiber, node) => {
+  render: Renderer["render"] = (root, dom, fiber, node) => {
     if (!fiber) {
       // create
-      const newFiber = this.construct(node!);
+      const newFiber = this.construct(root, node!);
       dom.appendChild(newFiber.dom);
       return newFiber;
     } else if (!node) {
       // remove
-      fiber.content.forEach(child => this.reconcile(fiber.dom, child));
-      (fiber as FiberComponent).component?.unmount();
+      fiber.content.forEach(child => this.render(fiber, fiber.dom, child));
       fiber.dom.remove();
+      if ("component" in fiber) fiber.component.unmount();
       return;
-    } else if (fiber.node.type !== node.type) {
+    } else if (fiber.node.props.key !== node.props.key) {
       // replace
-      const newFiber = this.construct(node);
+      const newFiber = this.construct(root, node);
       dom.replaceChild(newFiber.dom, fiber.dom);
+      fiber.content.forEach(child => this.render(fiber, fiber.dom, child));
+      if ("component" in fiber) fiber.component.unmount();
       return newFiber;
     } else if (node.type === "element") {
       // update element
-      if (node.element) fiber.dom = node.element({ fiber, dom: node.dom });
+      fiber.dom = node.template.onUpdate({ fiber, dom: node.template.dom });
       fiber.node = node;
       return fiber;
     } else if (node.type === "component") {
@@ -47,40 +54,49 @@ export class SyncRenderer {
       const ffiber = fiber as FiberFragment;
 
       updateDomProps(ffiber.dom, ffiber.node.props, node.props);
-      ffiber.content = this.reconcileContent(ffiber, node);
+      ffiber.content = this.reconcile(ffiber, node);
       ffiber.node = node;
       return ffiber;
     }
   };
 
-  reconcileContent = (fiber: FiberFragment, node: RxNode): FiberInstance[] => {
-    const dom = fiber.dom;
-    const fibers = fiber.content;
+  reconcile = (parent: FiberFragment, node: RxNode): FiberInstance[] => {
+    const dom = parent.dom;
+    const fibers = parent.content;
     const nodes = node.props.content;
 
     const instances: FiberInstance[] = [];
     const count = Math.max(fibers.length, nodes.length);
     for (let i = 0; i < count; i++) {
-      const child = this.reconcile(dom, fibers[i], nodes[i]);
+      const child = this.render(parent, dom, fibers[i], nodes[i]);
       if (child) instances.push(child);
     }
 
     return instances;
   };
 
-  construct = (node: RxNode): FiberInstance => {
-    if (node.type === "element") return { dom: node.dom, node, content: [] };
+  construct = (parent: FiberInstance, node: RxNode): FiberInstance => {
+    if (node.type === "element") {
+      const fiber: FiberElement = {
+        dom: node.template.dom,
+        node,
+        content: [],
+        parent,
+      };
+      return fiber;
+    }
 
     if (node.type === "component") {
-      const component = new node.component(node.props);
-      const child = this.construct(component.render());
-      const fiber: FiberComponent = {
-        dom: child.dom,
-        node,
-        content: [child],
-        component,
-      };
-      component.mount(this, fiber);
+      const fiber = { node, parent, content: [] } as unknown as FiberComponent;
+
+      fiber.component = new node.template.constructor({
+        renderer: this,
+        fiber,
+      });
+      const child = this.construct(fiber, fiber.component.render());
+      fiber.dom = child.dom;
+      fiber.content = [child];
+      fiber.component.mount();
 
       return fiber;
     }
@@ -91,9 +107,37 @@ export class SyncRenderer {
         : document.createElement(node.type);
 
     updateDomProps(dom, {}, node.props);
-    const content = node.props.content.map(this.construct);
-    content.forEach(child => dom.appendChild(child.dom));
 
-    return { dom, node, content };
+    const fiber: FiberFragment = { dom, node, content: [], parent };
+    this.warnDuplicateKeys(fiber, node.props.content);
+    fiber.content = node.props.content.map(c => this.construct(fiber, c));
+    fiber.content.forEach(child => dom.appendChild(child.dom));
+
+    return fiber;
   };
+
+  private warnDuplicateKeys(parent: FiberInstance, nodes: RxNode[]) {
+    const customComponents = nodes.filter(n => {
+      return (
+        n.type === "component" &&
+        n.template.constructor !== Component &&
+        n.template.constructor !== ContextComponent
+      );
+    }) as RxComponent[];
+
+    const dups: Map<string, { name: string; count: number }> = new Map();
+    customComponents.forEach(({ template: { constructor }, props }) => {
+      const dup = dups.get(props.key) || { name: constructor.name, count: 0 };
+      dups.set(props.key, { ...dup, count: dup.count + 1 });
+    });
+
+    for (const [key, { count, name }] of dups) {
+      if (count > 1) {
+        console.warn(
+          `Each class component in a 'content' list should have a unique 'key' prop (detected ${count} ${name}s with key ${key}).`,
+          parent
+        );
+      }
+    }
+  }
 }
