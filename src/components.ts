@@ -12,6 +12,7 @@ import {
   createNodeProps,
   RequiredKeys,
   generateId,
+  Unsubscribe,
 } from "./utils";
 
 export type ComponentConfig = {
@@ -24,8 +25,10 @@ export class Component<
   P extends Attrs = Attrs,
   C extends Attrs = Attrs
 > {
+  private unsubscribes: Unsubscribe[] = [];
   private renderer: Renderer;
   private template: RxComponentTemplate<S, P, C>;
+
   protected fiber: FiberComponent;
   protected state: Readonly<S>;
   protected props: Readonly<P>;
@@ -43,8 +46,8 @@ export class Component<
 
   private initContext(): C {
     // register provider
-    const { unsubscribes, provider, consumer } = this.fiber.node.context;
-    if (provider) unsubscribes.push(provider.registerProvider(this.fiber));
+    const { provider, consumer } = this.fiber.node.context;
+    if (provider) this.unsubscribes.push(provider.registerProvider(this.fiber));
 
     // register consumers
     const consumers = new Map(Object.entries(consumer).map(([k, v]) => [v, k]));
@@ -59,9 +62,9 @@ export class Component<
 
         if (key) {
           consumers.delete(contextProvider);
-          unsubscribes.push(
+          this.unsubscribes.push(
             contextProvider.registerConsumer(fiber, this.fiber, () => {
-              console.log("callback", this);
+              console.log("callback");
             })
           );
 
@@ -72,14 +75,14 @@ export class Component<
       return findAndRegister(fiber.parent);
     };
     findAndRegister(this.fiber.parent);
-    console.log("added", this.fiber, this.fiber.node.context.unsubscribes);
+    console.log("subscribed", this.unsubscribes);
 
     return context as C;
   }
 
   private removeContext() {
-    console.log("removing", this.fiber.node.context.unsubscribes);
-    this.fiber.node.context.unsubscribes.forEach(unsub => unsub());
+    console.log("unsubscribed", this.unsubscribes);
+    this.unsubscribes.forEach(unsub => unsub());
   }
 
   setState(state: S | ((s: S) => S)) {
@@ -118,7 +121,7 @@ export class Component<
 
     this.fiber.dom = child.dom;
     this.fiber.content = [child];
-    this.fiber.node = node.context;
+    this.fiber.node = node;
 
     setTimeout(() => this.onUpdate());
     return this.fiber;
@@ -159,7 +162,7 @@ export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
   return {
     type: "component",
     props: createNodeProps(props),
-    context: { unsubscribes: [], ...context },
+    context,
     template: { ...template },
   };
 };

@@ -1,5 +1,5 @@
 import { Component, ComponentConfig } from "./components";
-import { ContextProvider, ContextUnsubscribe } from "./context";
+import { ContextProvider } from "./context";
 import { Attrs, ValueOf } from "./utils";
 
 interface RxBase {
@@ -11,7 +11,6 @@ export interface RxComponent<S = any, P = any, C = any> extends RxBase {
   context: {
     provider?: ContextProvider;
     consumer: Record<keyof C, ContextProvider<ValueOf<C>>>;
-    unsubscribes: ContextUnsubscribe[];
   };
   template: RxComponentTemplate<S, P, C>;
 }
