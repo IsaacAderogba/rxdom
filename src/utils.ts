@@ -1,14 +1,24 @@
 import { DOMElement, RxFragment, RxNode } from "./models";
 
-export type ContentProps = { content?: (RxNode | TextFragment)[] };
-export const createContent = ({ content = [] }: ContentProps) =>
-  content.map(c => (typeof c === "object" ? c : textFragment(c)));
+export type NodeProps = {
+  content?: (RxNode | TextFragment)[];
+  key?: string;
+} & Attrs;
+
+export const createNodeProps = ({
+  content = [],
+  key = generateId(),
+  ...props
+}: NodeProps) => ({
+  ...props,
+  content: content.map(c => (typeof c === "object" ? c : textFragment(c))),
+  key,
+});
 
 type TextFragment = string | number | boolean;
-const textFragment = (text: TextFragment, key = "text"): RxFragment => ({
+const textFragment = (text: TextFragment): RxFragment => ({
   type: "text",
-  key,
-  props: { nodeValue: text.toString(), content: [] },
+  props: { nodeValue: text.toString(), content: [], key: "text" },
 });
 
 export function updateDomProps(

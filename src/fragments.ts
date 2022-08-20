@@ -1,19 +1,18 @@
 import { RxFragment } from "./models";
-import { ContentProps, createContent, Attrs } from "./utils";
+import { NodeProps, createNodeProps, Attrs } from "./utils";
 
 type FragmentProps = Partial<
   Attrs &
     Partial<GlobalEventHandlers> & {
       style?: Partial<CSSStyleDeclaration>;
-    } & ContentProps
+    } & NodeProps
 >;
 
 const createFragment = (
   type: RxFragment["type"],
-  props: FragmentProps = {}
+  { key = type, ...props }: FragmentProps = {}
 ): RxFragment => {
-  const content = createContent(props);
-  return { type, key: type, props: { ...props, content } };
+  return { type, props: createNodeProps({ key, ...props }) };
 };
 
 const fragment =

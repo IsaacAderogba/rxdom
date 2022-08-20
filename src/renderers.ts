@@ -1,3 +1,4 @@
+import { Component } from "./components";
 import {
   DOMElement,
   FiberComponent,
@@ -30,7 +31,7 @@ export class SyncRenderer {
       fiber.dom.remove();
       if ("component" in fiber) fiber.component.unmount();
       return;
-    } else if (fiber.node.key !== node.key) {
+    } else if (fiber.node.props.key !== node.props.key) {
       // replace
       const newFiber = this.construct(root, node);
       dom.replaceChild(newFiber.dom, fiber.dom);

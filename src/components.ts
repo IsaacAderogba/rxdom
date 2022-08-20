@@ -6,9 +6,9 @@ import {
 } from "./models";
 import { Renderer } from "./renderers";
 import {
-  ContentProps,
+  NodeProps,
   Attrs,
-  createContent,
+  createNodeProps,
   RequiredKeys,
   generateId,
 } from "./utils";
@@ -48,7 +48,7 @@ export class Component<
     // todo
   }
 
-  private unregisterContexts() {
+  private removeContext() {
     this.fiber.node.context.unsubscribes.forEach(unsub => unsub());
   }
 
@@ -65,6 +65,7 @@ export class Component<
 
   protected onMount(): void | (() => void) {}
   public mount() {
+    console.log("mount");
     setTimeout(() => {
       const onUnmount = this.onMount();
       if (onUnmount) this.onUnmount = onUnmount;
@@ -74,7 +75,7 @@ export class Component<
   private onUnmount(): void | (() => void) {}
   public unmount() {
     if (this.onUnmount) this.onUnmount();
-    this.unregisterContexts();
+    this.removeContext();
     console.log("unmount");
   }
 
@@ -106,7 +107,10 @@ export class Component<
   ) => {
     const key = generateId();
     return (props: Props<P> = {} as P) =>
-      createComponent({ constructor }, { props, key, context: { consumer } });
+      createComponent(
+        { constructor },
+        { props: { key, ...props }, context: { consumer } }
+      );
   };
 }
 
@@ -118,26 +122,25 @@ export const FC = <P extends Attrs = Attrs, C extends Attrs = Attrs>(
   return (props: Props<P> = {} as P) =>
     createComponent(
       { render, constructor: Component },
-      { props, key, context: { consumer } }
+      { props: { key, ...props }, context: { consumer } }
     );
 };
 
 export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
   template: RxComponentTemplate<S, P, C>,
-  options: { props: Props<P>; context: Context<S, P, C>; key: string }
+  options: { props: Props<P>; context: Context<S, P, C> }
 ): RxComponent => {
-  const { props, context, key } = options;
+  const { props, context } = options;
 
   return {
     type: "component",
-    key,
-    props: { ...props, content: createContent(props) },
+    props: createNodeProps(props),
     context: { unsubscribes: [], ...context },
     template: { ...template },
   };
 };
 
-type Props<P> = P & ContentProps;
+type Props<P> = P & NodeProps;
 type Context<S, P, C> = RequiredKeys<
   RxComponent<S, P, C>["context"],
   "consumer"

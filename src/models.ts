@@ -3,8 +3,7 @@ import { ContextProvider, ContextUnsubscribe } from "./context";
 import { Attrs, ValueOf } from "./utils";
 
 interface RxBase {
-  key: string;
-  props: Attrs & { content: RxNode[] };
+  props: Attrs & { content: RxNode[]; key: string };
 }
 
 export interface RxComponent<S = any, P = any, C = any> extends RxBase {

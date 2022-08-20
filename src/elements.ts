@@ -1,11 +1,10 @@
 import { RxElement } from "./models";
-import { generateId, RequiredKeys } from "./utils";
+import { createNodeProps, RequiredKeys } from "./utils";
 
 export const createElement = (
   template: RequiredKeys<RxElement["template"], "dom">
 ): RxElement => ({
   type: "element",
-  key: generateId(),
-  props: { content: [] },
+  props: createNodeProps({}),
   template: { onUpdate: () => template.dom, ...template },
 });

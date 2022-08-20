@@ -1,7 +1,7 @@
 import { Component, createComponent } from "./components";
 import { div } from "./fragments";
 import { FiberComponent, RxComponent } from "./models";
-import { ContentProps, Attrs, generateId } from "./utils";
+import { NodeProps, Attrs, generateId } from "./utils";
 
 type Provider = FiberComponent;
 type Consumer = FiberComponent;
@@ -37,11 +37,20 @@ export class ContextProvider<V extends Attrs = Attrs> {
     this.providerConsumers.get(provider)!.delete(consumer);
   }
 
-  Context(props: ContentProps & V): RxComponent {
+  Context(props: NodeProps & V): RxComponent {
     return createComponent(
-      { constructor: Component, render: props => div(props) },
-      { props, key: this.key, context: { provider: this, consumer: {} } }
+      { constructor: ContextProviderComponent },
+      {
+        props: { key: this.key, ...props },
+        context: { provider: this, consumer: {} },
+      }
     );
+  }
+}
+
+class ContextProviderComponent extends Component {
+  render() {
+    return div(this.props);
   }
 }
 
