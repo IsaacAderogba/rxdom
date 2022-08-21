@@ -2,7 +2,6 @@ import { Component } from "./components";
 import {
   DOMElement,
   FiberComponent,
-  FiberElement,
   FiberFragment,
   FiberInstance,
   RxComponent,
@@ -39,17 +38,16 @@ export class SyncRenderer {
       fiber.content.forEach(child => this.render(fiber, fiber.dom, child));
       if ("component" in fiber) fiber.component.unmount();
       return newFiber;
-    } else if (node.type === "element") {
-      // update element
-      fiber.dom = node.template.onUpdate({ fiber, dom: node.template.dom });
-      fiber.node = node;
-      return fiber;
     } else if (node.type === "component") {
       // update component
       const cfiber = fiber as FiberComponent;
       return cfiber.component.setProps(node);
+    } else if (node.type === "element") {
+      // update element fragment
+      fiber.node = node;
+      return fiber;
     } else {
-      // update fragment
+      // update dom fragment
       const ffiber = fiber as FiberFragment;
 
       updateDomProps(ffiber.dom, ffiber.node.props, node.props);
@@ -75,16 +73,6 @@ export class SyncRenderer {
   };
 
   construct = (parent: FiberInstance, node: RxNode): FiberInstance => {
-    if (node.type === "element") {
-      const fiber: FiberElement = {
-        dom: node.template.dom,
-        node,
-        content: [],
-        parent,
-      };
-      return fiber;
-    }
-
     if (node.type === "component") {
       const fiber = { node, parent, content: [] } as unknown as FiberComponent;
 
@@ -97,6 +85,16 @@ export class SyncRenderer {
       fiber.content = [child];
       fiber.component.mount();
 
+      return fiber;
+    }
+
+    if (node.type === "element") {
+      const fiber: FiberFragment = {
+        dom: node.props.dom,
+        node,
+        content: [],
+        parent,
+      };
       return fiber;
     }
 

@@ -1,5 +1,5 @@
-import { createElement } from "./elements";
-import { DOMElement, FiberElement, FiberInstance, RxNode } from "./models";
+import { el } from "./fragments";
+import { DOMElement, FiberFragment, FiberInstance, RxNode } from "./models";
 import { Renderer, SyncRenderer } from "./renderers";
 
 export class RxDOM {
@@ -20,7 +20,7 @@ export class RxDOM {
     );
   }
 
-  private createRoot(dom: DOMElement): FiberElement {
-    return { dom, content: [], node: createElement({ dom }) };
+  private createRoot(dom: DOMElement): FiberFragment {
+    return { dom, content: [], node: el({ dom }) };
   }
 }

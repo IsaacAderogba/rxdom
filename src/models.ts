@@ -24,19 +24,12 @@ export type RxComponentTemplate<S, P, C> = {
     fiber: FiberComponent;
   }) => RxNode;
 };
+
 export interface RxFragment extends RxBase {
-  type: keyof HTMLElementTagNameMap | "text";
+  type: keyof HTMLElementTagNameMap | "text" | "element";
 }
 
-export interface RxElement extends RxBase {
-  type: "element";
-  template: {
-    onUpdate: (props: { fiber: FiberInstance; dom: DOMElement }) => DOMElement;
-    dom: DOMElement;
-  };
-}
-
-export type RxNode = RxFragment | RxComponent | RxElement;
+export type RxNode = RxComponent | RxFragment;
 
 export type DOMElement = HTMLElement | Text;
 
@@ -55,8 +48,4 @@ export interface FiberFragment extends FiberBase {
   node: RxFragment;
 }
 
-export interface FiberElement extends FiberBase {
-  node: RxElement;
-}
-
-export type FiberInstance = FiberComponent | FiberFragment | FiberElement;
+export type FiberInstance = FiberComponent | FiberFragment;

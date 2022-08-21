@@ -1,4 +1,4 @@
-import { RxFragment } from "./models";
+import { DOMElement, RxFragment } from "./models";
 import { NodeProps, createNodeProps, Attrs } from "./utils";
 
 type FragmentProps = Partial<
@@ -19,6 +19,9 @@ const fragment =
   (type: RxFragment["type"]) =>
   (props: Partial<FragmentProps> = {}) =>
     createFragment(type, props);
+
+export const el = (props: { dom: DOMElement; key?: string }) =>
+  createFragment("element", props);
 
 export const a = fragment("a");
 export const abbr = fragment("abbr");

@@ -9,9 +9,12 @@ import {
   label,
   input,
   span,
+  el,
   composeFunction,
   composeContext,
 } from "./src";
+
+const customDOM = document.createElement("input");
 
 type AppContextProps = {
   todos: TodoProps[];
@@ -61,7 +64,11 @@ class AppComponent extends Component<AppState, {}> {
       toggleTodo: this.toggleTodo,
       content: [
         div({
-          content: [TodoForm({ key: "TodoForm" }), TodoList()],
+          content: [
+            TodoForm({ key: "TodoForm" }),
+            TodoList(),
+            el({ dom: customDOM }),
+          ],
         }),
       ],
     });
@@ -86,11 +93,9 @@ class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
       },
       content: [
         label({
-          for: "i-n",
           content: ["Add new item"],
         }),
         input({
-          id: "i-n",
           value: this.state.name,
           oninput: (e: any) =>
             this.setState(s => ({ ...s, name: e.target.value })),
