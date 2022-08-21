@@ -134,7 +134,11 @@ export class Component<
 
   public render(): RxNode {
     if (!this.template.render) throw new Error("Todo - render expected");
-    return this.template.render(this.props, this.context);
+    return this.template.render({
+      props: this.props,
+      context: this.context,
+      fiber: this.fiber,
+    });
   }
 
   static FC = <S extends Attrs, P extends Attrs, C extends Attrs>(

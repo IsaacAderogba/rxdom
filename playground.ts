@@ -102,7 +102,9 @@ const TodoForm = Component.FC(TodoFormComponent, {
 
 type TodoListContext = { app: AppProviderProps };
 const TodoList = FC<{}, TodoListContext>(
-  (_, { app: { todos } }) => {
+  ({ context }) => {
+    const todos = context.app.todos;
+
     return ul({
       style: { display: "flex", flexDirection: "column", gap: "4px" },
       content: todos.map(todo => li({ content: [Todo(todo)] })),
@@ -119,8 +121,9 @@ type TodoProps = {
 type TodoContext = { app: AppProviderProps };
 
 const Todo = FC<TodoProps, TodoContext>(
-  (props, { app: { toggleTodo, deleteTodo } }) => {
+  ({ props, context }) => {
     const { id, name, done } = props;
+    const { toggleTodo, deleteTodo } = context.app;
 
     return div({
       style: { display: "flex", gap: "4px", alignItems: "center" },

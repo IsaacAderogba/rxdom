@@ -19,7 +19,7 @@ export type RxComponentTemplate<S, P, C> = {
   constructor: {
     new (config: ComponentConfig): Component<S, P, C>;
   };
-  render?: (props: P, context: C) => RxNode;
+  render?: (args: { props: P; context: C; fiber: FiberInstance }) => RxNode;
 };
 export interface RxFragment extends RxBase {
   type: keyof HTMLElementTagNameMap | "text" | "context";
