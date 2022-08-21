@@ -9,7 +9,7 @@ import {
   label,
   input,
   span,
-  FC,
+  composeFunction,
   createProvider,
 } from "./src";
 
@@ -64,7 +64,7 @@ class AppComponent extends Component<AppState, {}> {
   }
 }
 
-const App = Component.FC(AppComponent);
+const App = Component.compose(AppComponent);
 
 type TodoFormContext = { app: AppProviderProps };
 class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
@@ -96,12 +96,12 @@ class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
   }
 }
 
-const TodoForm = Component.FC(TodoFormComponent, {
+const TodoForm = Component.compose(TodoFormComponent, {
   app: AppProvider,
 });
 
 type TodoListContext = { app: AppProviderProps };
-const TodoList = FC<{}, TodoListContext>(
+const TodoList = composeFunction<{}, TodoListContext>(
   ({ context }) => {
     const todos = context.app.todos;
 
@@ -120,7 +120,7 @@ type TodoProps = {
 };
 type TodoContext = { app: AppProviderProps };
 
-const Todo = FC<TodoProps, TodoContext>(
+const Todo = composeFunction<TodoProps, TodoContext>(
   ({ props, context }) => {
     const { id, name, done } = props;
     const { toggleTodo, deleteTodo } = context.app;

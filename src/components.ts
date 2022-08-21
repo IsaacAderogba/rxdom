@@ -141,7 +141,7 @@ export class Component<
     });
   }
 
-  static FC = <S extends Attrs, P extends Attrs, C extends Attrs>(
+  static compose = <S extends Attrs, P extends Attrs, C extends Attrs>(
     constructor: RxComponentTemplate<S, P, C>["constructor"],
     consumer: Context<S, P, C>["consumer"] = {} as C
   ) => {
@@ -150,7 +150,7 @@ export class Component<
   };
 }
 
-export const FC = <P extends Attrs = Attrs, C extends Attrs = Attrs>(
+export const composeFunction = <P extends Attrs = Attrs, C extends Attrs = Attrs>(
   render: RxComponentTemplate<{}, P, C>["render"],
   consumer: Context<{}, P, C>["consumer"] = {} as C
 ) => {

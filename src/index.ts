@@ -1,4 +1,4 @@
-export { Component, FC } from "./components";
+export { Component, composeFunction } from "./components";
 export { createElement } from "./elements";
 export * from "./fragments";
 export { SyncRenderer } from "./renderers";
