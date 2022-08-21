@@ -23,9 +23,9 @@ npm install @iatools/rxdom
 You can then import the `RxDOM` class and any desired component and fragment functions.
 
 ```typescript
-import { RxDOM, FC, h1 } from "@iatools/rxdom";
+import { RxDOM, composeFunction, h1 } from "@iatools/rxdom";
 
-const App = FC(() => {
+const App = composeFunction(() => {
   return h1({ content: ["hello, world!"] });
 });
 
@@ -35,7 +35,7 @@ rxdom.render(App(), document.getElementById("app")!);
 
 "hello, world!” using a function component
 
-You can also use an ES6 class to define a component. This enables you to manage your own state and hook into lifecycle methods. Components are then “functionalized” using the static `Component.FC` method, leading to a consistent component usage experience.
+You can also use an ES6 class to define a component blueprint. This enables you to manage your own state and hook into lifecycle methods. These blueprints are then “componentized” using the static `Component.compose` method, leading to a consistent component usage experience.
 
 ```typescript
 import { RxDOM, Component, h1 } from "@iatools/rxdom";
@@ -53,7 +53,7 @@ class AppComponent extends Component {
   }
 }
 
-const App = Component.FC(AppComponent);
+const App = Component.compose(AppComponent);
 
 const rxdom = new RxDOM();
 rxdom.render(App({ key: "root" }), document.getElementById("app")!);
@@ -74,9 +74,9 @@ import { a, abbr, address, ... } from "@iatools/rxdom"
 Using fragments is then as simple as invoking them and optionally passing child fragments or primitive values as their content.
 
 ```typescript
-import { RxDOM, FC, h1, i } from "@iatools/rxdom";
+import { RxDOM, composeFunction, h1, i } from "@iatools/rxdom";
 
-const App = FC(() => {
+const App = composeFunction(() => {
   return h1({
     style: { color: "red" },
     content: [i({ content: ["hello, world!"] })],
@@ -89,32 +89,60 @@ rxdom.render(App(), document.getElementById("app")!);
 
 This renders a red `h1` tag with italicized content.
 
-By convention, fragments are lower cased.
+Additionally, RxDOM provides support for rendering external DOM elements into the user interface using the special `el` fragment.
+
+> This was an important design goal for using RxDOM with my [Pine](https://github.com/IsaacAderogba/pine) editor framework. Pine, which uses the Prosemirror toolkit, likes to manage its own DOM representation at certain points. This allows for seamless integration between the two frameworks.
+
+```typescript
+import { Component, div, el, input, RxDOM } from "@iatools/rxdom";
+
+const externalInput = document.createElement("input");
+
+class AppComponent extends Component {
+  state = { value: "" };
+
+  render() {
+    const internalInput = input({
+      value: this.state.value,
+      oninput: e => this.setState({ value: e.target.value }),
+    });
+
+    return div({
+      content: [internalInput, el({ dom: externalInput })],
+    });
+  }
+}
+
+const App = Component.compose(AppComponent);
+
+const rxdom = new RxDOM();
+rxdom.render(App({ key: "root" }), document.getElementById("app")!);
+```
 
 #### Components
 
-RxDOM supports both function, class, and provider components.
+RxDOM supports the creation of function, class, and context components through `compose` factory functions.
 
 **Function Components**
 
-Function components are strictly functional, with no utilities to manage their own state. This makes them highly resilient and predictable.
+Function components are strictly functional, with no utilities to manage their own state. This makes them highly predictable. While unable to manage their own state, function components can still receive `props` from a direct parent component or `context` from ancestor provider components.
 
-While unable to manage their own state, function components can still receive `props` from a direct parent component or `context` from ancestor provider components.
+They’re created via `composeFunction` invocations.
 
 ```typescript
-const FunctionComponent = FC((props, context) => {
+const FunctionComponent = composeFunction((props, context) => {
   return h1({ content: ["hello, world!"] });
 });
 ```
 
 **Class Components**
 
-Class components enhance component functionality by providing a way to manage state and react to lifecycle events. By allowing state of lifecycle events, class components are incredibly powerful - but at the cost of increased complexity.
+Class components enhance component functionality by providing a way to manage state and react to lifecycle events. By allowing management of state and lifecycle events, class components are incredibly powerful - at the cost of increased complexity.
 
-Class components are created by extending the `Component` constructor. Before use, they must be “functionalized” through use of the `Component.FC` static method.
+Class blueprints are created by extending the `Component` constructor. Before use, they must be “componentized” through use of the `Component.compose` static method.
 
 ```typescript
-class ClassComponent extends Component {
+class ClassBlueprint extends Component {
   state = { greeting: "hello, world!" };
 
   render() {
@@ -122,88 +150,83 @@ class ClassComponent extends Component {
     return h1({ content: [this.state.greeting] })
   }
 }
-const Class = Component.FC(ClassComponent);
+const ClassComponent = Component.compose(ClassBlueprint);
 ```
 
-**Provider Components**
+**Context Components**
 
-Provider components allow us to easily pass props down the component hierarchy. They’re similar to context components as defined by React. Provider components are created via the `createProvider` factory method.
+Context components allow us to easily pass props down the component hierarchy. They’re similar to context components as defined by React. Unlike the components we’ve seen thus far, invoking `composeContext` will return both a `Provider` and a `Consumer`.
 
 ```typescript
-type ProviderComponentProps = { greeting: string };
-const ProviderComponent = createProvider<ProviderComponentProps>();
+type ContextProps = { greeting: string };
+const [ContextProvider, ContextConsumer] = composeContext<ContextProps>(
+  ({ props }) => {
+    return div({ content: props.content });
+  }
+);
 ```
+
+Any props passed to the `Provider` component will be made accessible to children `Consumer` components.
+
+```typescript
+// passes context props to the provider
+const App = composeFunction(() => {
+  return ContextProvider({
+    greeting: "hello, world!",
+    content: [Todo()],
+  });
+});
+
+// consumes the context provided
+const Todo = composeFunction(
+  ({ context }) => {
+    return div({ content: [context.consumer.greeting] });
+  },
+  { consumer: ContextConsumer }
+);
+```
+
+Reserved props such as `content` and `key` are not passed down to the consumer.
 
 **Example**
 
-The following example demonstrates how provider, class, and function components may be used together.
+To get a sense for how function, class, and context components may be used together, the following  provides an example utilizing Typescript.
 
 ```typescript
 // provider component
-type ProviderComponentProps = { greeting: string };
-const ProviderComponent = createProvider<ProviderComponentProps>();
+type ContextProps = { greeting: string };
+const [ContextProvider, ContextConsumer] = composeContext<ContextProps>(
+  ({ props }) => {
+    return div({ content: props.content });
+  }
+);
 
 // class component
-class ClassComponent extends Component {
+class ClassBlueprint extends Component {
   state = { greeting: "hello, world!" };
 
   render() {
-    return ProviderComponent.Context({
+    return ContextProvider({
       greeting: this.state.greeting,
       content: [FunctionComponent({ greeting: "hello, world!" })],
     });
   }
 }
-const Class = Component.FC(ClassComponent);
+const ClassComponent = Component.compose(ClassBlueprint);
 
 // function component
-const FunctionComponent = FC<{}, { provider: ProviderComponentProps }>(
-  (props, context) => {
-    return h1({ content: [context.provider.greeting] });
+const FunctionComponent = composeFunction<{}, { consumer: ContextProps }>(
+  ({ context }) => {
+    return h1({ content: [context.consumer.greeting] });
   },
-  { provider: ProviderComponent }
+  { consumer: ContextConsumer }
 );
 
 const rxdom = new RxDOM();
-rxdom.render(Class({ key: "root" }), document.getElementById("app")!);
+rxdom.render(ClassComponent({ key: "root" }), document.getElementById("app")!);
 ```
 
-While only 25 lines of code, it packs a lot of information about the interaction between these component types. Refer to the guides section for more guided walkthroughs.
-
-#### Elements
-
-RxDOM provides first class support for rendering arbitrary DOM elements into the user interface. While these elements are treated as black boxes for the most part, RxDOM provides an update hook for when their parent fragments or components have changed.
-
-> This was an important design goal for using RxDOM with my [Pine](https://github.com/IsaacAderogba/pine) editor framework. Pine, which uses the Prosemirror toolkit, likes to manage its own DOM representation for its content blocks. This allows for seamless integration of those content blocks.
-
-```typescript
-import { RxDOM, Component, createElement, div, input } from "@iatools/rxdom";
-
-const externalInput = createElement({
-  dom: document.createElement("input"),
-  updater: ({ dom }) => dom,
-});
-
-class AppComponent extends Component<{}, string> {
-  state = "";
-
-  render() {
-    const internalInput = input({
-      value: this.state,
-      oninput: e => this.setState(e.target.value),
-    });
-
-    return div({
-      content: [internalInput, externalInput],
-    });
-  }
-}
-
-const App = Component.FC(AppComponent);
-
-const rxdom = new RxDOM();
-rxdom.render(App(), document.getElementById("app")!);
-```
+While only 25 lines of code, it packs a lot of information about the interaction between these component types.
 
 #### Lifecycle Events
 
@@ -214,12 +237,13 @@ Class components supports four lifecycle methods:
 This lifecycle can be hooked into by simply defining a constructor method. This allows you to define the initial state of your component based on the starting props.
 
 ```typescript
-type AppProps = { placeholder: string };
 type AppState = { value: string };
+type AppProps = { placeholder: string };
 
-class AppComponent extends Component<AppProps, AppState> {
-  constructor(props: AppProps) {
-    super(props);
+
+class AppComponent extends Component<AppState, AppProps> {
+  constructor(config) {
+    super(config);
     this.state = { value: props.placeholder || "Start writing..." };
   }
 
@@ -229,10 +253,10 @@ class AppComponent extends Component<AppProps, AppState> {
 
 **2) Mounting**
 
-A component mounts once all of its descendants have mounted. The `onMount` method allows you to hook into this.
+A component mounts once all of its descendants have mounted. The `onMount` method allows you to hook into when this happens.
 
 ```typescript
-class AppComponent extends Component<AppProps, AppState> {
+class AppComponent extends Component<AppState, AppProps> {
   state = { value: ""}
 
   onMount() {
@@ -245,10 +269,10 @@ class AppComponent extends Component<AppProps, AppState> {
 
 **3) Updating**
 
-Components update either due to a `state` change or a change in their `props`. The `onUpdate` method allows you to respond to such updates.
+Components update either due to a change in their `state`, `props`, or `context`. The `onUpdate` method allows you to hook into such updates.
 
 ```typescript
-class AppComponent extends Component<AppProps, AppState> {
+class AppComponent extends Component<AppState, AppProps> {
   state = { value: ""}
 
   onUpdate() {
@@ -262,7 +286,7 @@ class AppComponent extends Component<AppProps, AppState> {
 > By the time `onUpdate` triggers, the component's UI will have already re-rendered. If you wish to tap in to this before-render phase, then you can use use the `render` method in the space before returning an element.
 
 ```typescript
-class AppComponent extends Component<AppProps, AppState> {
+class AppComponent extends Component<AppState, AppProps> {
   state = { value: "" };
 
   render() {
@@ -278,7 +302,7 @@ class AppComponent extends Component<AppProps, AppState> {
 Lastly RxDOM allows you to do clean up logic just before a component unmounts. To tap into this lifecycle, simply return a function from the `onMount` lifecycle described above.
 
 ```typescript
-class AppComponent extends Component<AppProps, AppState> {
+class AppComponent extends Component<AppState, AppProps> {
   state = { value: "" };
 
   onMount() {
@@ -340,17 +364,15 @@ The simple fix for this, as well as a host of other subtle issues, is to require
 
 #### Rx Nodes
 
-When you create *fragments, components*, and *elements* using `RxDOM`, you are in fact creating `RxNode`s. These nodes are simple JavaScript objects which specify the `type` and `props` of an element.
-
-Naturally, an `RxNode` can either be a fragment, component, or element:
+When you create *fragments* and *components* using `RxDOM`, you are in fact creating `RxNodes`. These nodes are simple JavaScript objects which specify the `type` and `props` of an element.
 
 ```typescript
-type RxNode =  RxFragment | RxComponent | RxElement;
+type RxNode =  RxFragment | RxComponent;
 ```
 
 #### DOM Elements
 
-RxDOM uses the spec from the `RxNode`s in order to construct `DOMElement`s.
+RxDOM uses the spec from the `RxNodes` in order to construct `DOMElements`.
 
 ```typescript
 type DOMElement = HTMLElement | Text;
@@ -358,7 +380,7 @@ type DOMElement = HTMLElement | Text;
 
 #### Fiber Instances
 
-To support Virtual DOM rendering, RxDOM introduces another data structure called a `FiberInstance`. A fiber instance simply keeps reference to the constructed `DOMElement`, the associated `RxNode` that was used for its construction, and any children or child `FiberInstance`s. Similarly, there's different fiber instance types for fragments, components, and elements:
+To support Virtual DOM rendering, RxDOM introduces another data structure called a `FiberInstance`. A fiber instance simply keeps reference to the constructed `DOMElement`, the associated `RxNode` that was used for its construction, and any children or child `FiberInstances`.
 
 ```typescript
 export type FiberInstance = FiberComponent | FiberFragment | FiberElement;

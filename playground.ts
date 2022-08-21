@@ -33,6 +33,10 @@ type AppState = { todos: TodoProps[] };
 class AppComponent extends Component<AppState, {}> {
   state: AppState = { todos: [] };
 
+  constructor(config) {
+    super(config);
+  }
+
   addTodo = (name: string) => {
     this.setState(prev => ({
       todos: [...prev.todos, { id: Date.now().toString(), done: false, name }],
