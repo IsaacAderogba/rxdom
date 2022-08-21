@@ -1,5 +1,4 @@
 import { Component } from "./components";
-import { ContextComponent } from "./context";
 import {
   DOMElement,
   FiberComponent,
@@ -118,11 +117,7 @@ export class SyncRenderer {
 
   private warnDuplicateKeys(parent: FiberInstance, nodes: RxNode[]) {
     const customComponents = nodes.filter(n => {
-      return (
-        n.type === "component" &&
-        n.template.constructor !== Component &&
-        n.template.constructor !== ContextComponent
-      );
+      return n.type === "component" && n.template.constructor !== Component;
     }) as RxComponent[];
 
     const dups: Map<string, { name: string; count: number }> = new Map();

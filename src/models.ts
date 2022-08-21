@@ -1,6 +1,6 @@
 import { Component, ComponentConfig } from "./components";
 import { ContextProvider } from "./context";
-import { Attrs, ValueOf } from "./utils";
+import { Attrs, NodeProps } from "./utils";
 
 interface RxBase {
   props: Attrs & { content: RxNode[]; key: string };
@@ -10,7 +10,7 @@ export interface RxComponent<S = any, P = any, C = any> extends RxBase {
   type: "component";
   context: {
     provider?: ContextProvider;
-    consumer: Record<keyof C, ContextProvider<ValueOf<C>>>;
+    consumer: Record<keyof C, ContextProvider>;
   };
   template: RxComponentTemplate<S, P, C>;
 }
@@ -19,7 +19,11 @@ export type RxComponentTemplate<S, P, C> = {
   constructor: {
     new (config: ComponentConfig): Component<S, P, C>;
   };
-  render?: (args: { props: P; context: C; fiber: FiberInstance }) => RxNode;
+  render?: (args: {
+    props: NodeProps & P;
+    context: C;
+    fiber: FiberComponent;
+  }) => RxNode;
 };
 export interface RxFragment extends RxBase {
   type: keyof HTMLElementTagNameMap | "text" | "context";

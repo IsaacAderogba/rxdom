@@ -1,3 +1,4 @@
+import { ContextProvider } from "./context";
 import {
   FiberComponent,
   FiberInstance,
@@ -150,8 +151,11 @@ export class Component<
   };
 }
 
-export const composeFunction = <P extends Attrs = Attrs, C extends Attrs = Attrs>(
-  render: RxComponentTemplate<{}, P, C>["render"],
+export const composeFunction = <
+  P extends Attrs = Attrs,
+  C extends Attrs = Attrs
+>(
+  render: Required<RxComponentTemplate<{}, P, C>>["render"],
   consumer: Context<{}, P, C>["consumer"] = {} as C
 ) => {
   const key = generateId();
@@ -160,6 +164,48 @@ export const composeFunction = <P extends Attrs = Attrs, C extends Attrs = Attrs
       { render, constructor: Component },
       { props: { key, ...props }, context: { consumer } }
     );
+};
+
+export const composeContext = <
+  P extends Attrs = Attrs,
+  C extends Attrs = Attrs
+>(
+  render: Required<RxComponentTemplate<{}, P, C>>["render"],
+  consumer: Context<{}, P, C>["consumer"] = {} as C
+) => {
+  const key = generateId();
+  const contextProvider = new ContextProvider();
+
+  const emitContext = (fiber: FiberComponent) => {
+    const provider = fiber.node.context.provider;
+    if (!provider) return;
+
+    const consumers = provider.providerConsumers.get(fiber);
+    if (!consumers) return;
+
+    const value = provider.getValue(fiber);
+    for (const [_, callback] of consumers) {
+      callback(value);
+    }
+  };
+
+  return [
+    (props: Props<P> = {} as P) =>
+      createComponent(
+        {
+          constructor: Component,
+          render: args => {
+            emitContext(args.fiber);
+            return render(args);
+          },
+        },
+        {
+          props: { key, ...props },
+          context: { provider: contextProvider, consumer },
+        }
+      ),
+    contextProvider,
+  ] as const;
 };
 
 export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(

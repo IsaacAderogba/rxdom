@@ -10,17 +10,21 @@ import {
   input,
   span,
   composeFunction,
-  createProvider,
+  composeContext,
 } from "./src";
 
-type AppProviderProps = {
+type AppContextProps = {
   todos: TodoProps[];
   addTodo: (name: string) => void;
   toggleTodo: (id: string) => void;
   deleteTodo: (id: string) => void;
 };
 
-const AppProvider = createProvider<AppProviderProps>();
+const [AppProvider, AppConsumer] = composeContext<AppContextProps>(
+  ({ props }) => {
+    return div({ content: props.content });
+  }
+);
 
 type AppState = { todos: TodoProps[] };
 class AppComponent extends Component<AppState, {}> {
@@ -50,7 +54,7 @@ class AppComponent extends Component<AppState, {}> {
   };
 
   render() {
-    return AppProvider.Context({
+    return AppProvider({
       todos: this.state.todos,
       addTodo: this.addTodo,
       deleteTodo: this.deleteTodo,
@@ -66,7 +70,7 @@ class AppComponent extends Component<AppState, {}> {
 
 const App = Component.compose(AppComponent);
 
-type TodoFormContext = { app: AppProviderProps };
+type TodoFormContext = { app: AppContextProps };
 class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
   state = { name: "" };
 
@@ -97,12 +101,12 @@ class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
 }
 
 const TodoForm = Component.compose(TodoFormComponent, {
-  app: AppProvider,
+  app: AppConsumer,
 });
 
-type TodoListContext = { app: AppProviderProps };
+type TodoListContext = { app: AppContextProps };
 const TodoList = composeFunction<{}, TodoListContext>(
-  ({ context }) => {
+  ({ context, props }) => {
     const todos = context.app.todos;
 
     return ul({
@@ -110,7 +114,7 @@ const TodoList = composeFunction<{}, TodoListContext>(
       content: todos.map(todo => li({ content: [Todo(todo)] })),
     });
   },
-  { app: AppProvider }
+  { app: AppConsumer }
 );
 
 type TodoProps = {
@@ -118,7 +122,7 @@ type TodoProps = {
   name: string;
   done: boolean;
 };
-type TodoContext = { app: AppProviderProps };
+type TodoContext = { app: AppContextProps };
 
 const Todo = composeFunction<TodoProps, TodoContext>(
   ({ props, context }) => {
@@ -142,7 +146,7 @@ const Todo = composeFunction<TodoProps, TodoContext>(
       ],
     });
   },
-  { app: AppProvider }
+  { app: AppConsumer }
 );
 
 const rxdom = new RxDOM();
