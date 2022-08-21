@@ -20,8 +20,6 @@ const fragment =
   (props: Partial<FragmentProps> = {}) =>
     createFragment(type, props);
 
-export const context = fragment("context");
-
 export const a = fragment("a");
 export const abbr = fragment("abbr");
 export const address = fragment("address");

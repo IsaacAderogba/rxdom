@@ -1,4 +1,3 @@
-import { ContextProvider } from "./context";
 import {
   FiberComponent,
   FiberInstance,
@@ -14,6 +13,7 @@ import {
   RequiredKeys,
   generateId,
   Unsubscribe,
+  omit,
 } from "./utils";
 
 export type ComponentConfig = {
@@ -64,12 +64,12 @@ export class Component<
         if (key) {
           consumers.delete(contextProvider);
           this.unsubscribes.push(
-            contextProvider.registerConsumer(fiber, this.fiber, slice =>
+            contextProvider.registerConsumer(fiber, slice =>
               this.setContext(prev => ({ ...prev, [key]: slice }))
             )
           );
 
-          context[key] = contextProvider.getValue(fiber);
+          context[key] = contextProvider.accessValue(fiber);
         }
       }
 
@@ -166,6 +166,36 @@ export const composeFunction = <
     );
 };
 
+type Callback = (attrs: Attrs) => void;
+
+export class ContextProvider {
+  providerConsumers: Map<FiberComponent, Set<Callback>> = new Map();
+
+  registerProvider(fiber: FiberComponent): Unsubscribe {
+    if (!this.providerConsumers.has(fiber)) {
+      this.providerConsumers.set(fiber, new Set());
+    }
+    return () => this.unregisterProvider(fiber);
+  }
+
+  private unregisterProvider(fiber: FiberComponent) {
+    this.providerConsumers.delete(fiber);
+  }
+
+  registerConsumer(fiber: FiberComponent, cb: Callback): Unsubscribe {
+    this.providerConsumers.get(fiber)!.add(cb);
+    return () => this.unregisterConsumer(fiber, cb);
+  }
+
+  private unregisterConsumer(fiber: FiberComponent, cb: Callback) {
+    this.providerConsumers.get(fiber)!.delete(cb);
+  }
+
+  accessValue(fiber: FiberComponent) {
+    return omit(fiber.node.props, ["key", "content"]);
+  }
+}
+
 export const composeContext = <
   P extends Attrs = Attrs,
   C extends Attrs = Attrs
@@ -183,9 +213,9 @@ export const composeContext = <
     const consumers = provider.providerConsumers.get(fiber);
     if (!consumers) return;
 
-    const value = provider.getValue(fiber);
-    for (const [_, callback] of consumers) {
-      callback(value);
+    const value = provider.accessValue(fiber);
+    for (const consumer of consumers) {
+      consumer(value);
     }
   };
 

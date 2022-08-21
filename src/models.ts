@@ -1,5 +1,4 @@
-import { Component, ComponentConfig } from "./components";
-import { ContextProvider } from "./context";
+import { Component, ComponentConfig, ContextProvider } from "./components";
 import { Attrs, NodeProps } from "./utils";
 
 interface RxBase {
@@ -26,7 +25,7 @@ export type RxComponentTemplate<S, P, C> = {
   }) => RxNode;
 };
 export interface RxFragment extends RxBase {
-  type: keyof HTMLElementTagNameMap | "text" | "context";
+  type: keyof HTMLElementTagNameMap | "text";
 }
 
 export interface RxElement extends RxBase {
