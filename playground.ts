@@ -13,14 +13,14 @@ import {
   createProvider,
 } from "./src";
 
-type AppProvider = {
+type AppProviderProps = {
   todos: TodoProps[];
   addTodo: (name: string) => void;
   toggleTodo: (id: string) => void;
   deleteTodo: (id: string) => void;
 };
 
-const appProvider = createProvider<AppProvider>();
+const AppProvider = createProvider<AppProviderProps>();
 
 type AppState = { todos: TodoProps[] };
 class AppComponent extends Component<AppState, {}> {
@@ -50,7 +50,7 @@ class AppComponent extends Component<AppState, {}> {
   };
 
   render() {
-    return appProvider.Context({
+    return AppProvider.Context({
       todos: this.state.todos,
       addTodo: this.addTodo,
       deleteTodo: this.deleteTodo,
@@ -66,7 +66,7 @@ class AppComponent extends Component<AppState, {}> {
 
 const App = Component.FC(AppComponent);
 
-type TodoFormContext = { app: AppProvider };
+type TodoFormContext = { app: AppProviderProps };
 class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
   state = { name: "" };
 
@@ -97,10 +97,10 @@ class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
 }
 
 const TodoForm = Component.FC(TodoFormComponent, {
-  app: appProvider,
+  app: AppProvider,
 });
 
-type TodoListContext = { app: AppProvider };
+type TodoListContext = { app: AppProviderProps };
 const TodoList = FC<{}, TodoListContext>(
   (_, { app: { todos } }) => {
     return ul({
@@ -108,7 +108,7 @@ const TodoList = FC<{}, TodoListContext>(
       content: todos.map(todo => li({ content: [Todo(todo)] })),
     });
   },
-  { app: appProvider }
+  { app: AppProvider }
 );
 
 type TodoProps = {
@@ -116,7 +116,7 @@ type TodoProps = {
   name: string;
   done: boolean;
 };
-type TodoContext = { app: AppProvider };
+type TodoContext = { app: AppProviderProps };
 
 const Todo = FC<TodoProps, TodoContext>(
   (props, { app: { toggleTodo, deleteTodo } }) => {
@@ -139,7 +139,7 @@ const Todo = FC<TodoProps, TodoContext>(
       ],
     });
   },
-  { app: appProvider }
+  { app: AppProvider }
 );
 
 const rxdom = new RxDOM();

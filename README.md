@@ -56,7 +56,7 @@ class AppComponent extends Component {
 const App = Component.FC(AppComponent);
 
 const rxdom = new RxDOM();
-rxdom.render(App(), document.getElementById("app")!);
+rxdom.render(App({ key: "root" }), document.getElementById("app")!);
 ```
 
 "hello, world!” using a class component and lifecycle methods.
@@ -93,37 +93,86 @@ By convention, fragments are lower cased.
 
 #### Components
 
-RxDOM supports both function components and class components
+RxDOM supports both function, class, and provider components.
+
+**Function Components**
+
+Function components are strictly functional, with no utilities to manage their own state. This makes them highly resilient and predictable.
+
+While unable to manage their own state, function components can still receive `props` from a direct parent component or `context` from ancestor provider components.
 
 ```typescript
-import { RxDOM, Component, h1, FC } from "@iatools/rxdom";
-
-type Props = { greeting: string };
-const FunctionComponent = FC<Props>(props => {
-  return h1({ content: [props.greeting] });
+const FunctionComponent = FC((props, context) => {
+  return h1({ content: ["hello, world!"] });
 });
-
-class ClassComponent extends Component {
-  render() {
-    return FunctionComponent({ greeting: "hello, world!" });
-  }
-}
-
-const Class = Component.FC(ClassComponent);
-
-const rxdom = new RxDOM();
-rxdom.render(Class(), document.getElementById("app")!);
 ```
 
-"hello, world!” using a function component
+**Class Components**
 
-In order to use a class component, it must be *functionalized* using the `Component.FC` constructor. While an extra step, it creates a consistent component usage experience.
+Class components enhance component functionality by providing a way to manage state and react to lifecycle events. By allowing state of lifecycle events, class components are incredibly powerful - but at the cost of increased complexity.
 
-By convention, components are title cased.
+Class components are created by extending the `Component` constructor. Before use, they must be “functionalized” through use of the `Component.FC` static method.
+
+```typescript
+class ClassComponent extends Component {
+  state = { greeting: "hello, world!" };
+
+  render() {
+    console.log(this.props, this.context)
+    return h1({ content: [this.state.greeting] })
+  }
+}
+const Class = Component.FC(ClassComponent);
+```
+
+**Provider Components**
+
+Provider components allow us to easily pass props down the component hierarchy. They’re similar to context components as defined by React. Provider components are created via the `createProvider` factory method.
+
+```typescript
+type ProviderComponentProps = { greeting: string };
+const ProviderComponent = createProvider<ProviderComponentProps>();
+```
+
+**Example**
+
+The following example demonstrates how provider, class, and function components may be used together.
+
+```typescript
+// provider component
+type ProviderComponentProps = { greeting: string };
+const ProviderComponent = createProvider<ProviderComponentProps>();
+
+// class component
+class ClassComponent extends Component {
+  state = { greeting: "hello, world!" };
+
+  render() {
+    return ProviderComponent.Context({
+      greeting: this.state.greeting,
+      content: [FunctionComponent({ greeting: "hello, world!" })],
+    });
+  }
+}
+const Class = Component.FC(ClassComponent);
+
+// function component
+const FunctionComponent = FC<{}, { provider: ProviderComponentProps }>(
+  (props, context) => {
+    return h1({ content: [context.provider.greeting] });
+  },
+  { provider: ProviderComponent }
+);
+
+const rxdom = new RxDOM();
+rxdom.render(Class({ key: "root" }), document.getElementById("app")!);
+```
+
+While only 25 lines of code, it packs a lot of information about the interaction between these component types. Refer to the guides section for more guided walkthroughs.
 
 #### Elements
 
-RxDOM provides first class support for rendering arbitrary DOM elements into the user interface. While elements are treated as black boxes for the most part, RxDOM provides an update hook for when their parent fragments or components have changed.
+RxDOM provides first class support for rendering arbitrary DOM elements into the user interface. While these elements are treated as black boxes for the most part, RxDOM provides an update hook for when their parent fragments or components have changed.
 
 > This was an important design goal for using RxDOM with my [Pine](https://github.com/IsaacAderogba/pine) editor framework. Pine, which uses the Prosemirror toolkit, likes to manage its own DOM representation for its content blocks. This allows for seamless integration of those content blocks.
 
@@ -180,7 +229,7 @@ class AppComponent extends Component<AppProps, AppState> {
 
 **2) Mounting**
 
-A component mounts once all if its descendants have mounted. The `onMount` method allows you to hook into this.
+A component mounts once all of its descendants have mounted. The `onMount` method allows you to hook into this.
 
 ```typescript
 class AppComponent extends Component<AppProps, AppState> {
@@ -210,7 +259,7 @@ class AppComponent extends Component<AppProps, AppState> {
 }
 ```
 
-> By the time `onUpdate` triggers, the component's UI will have already re-rendered. If you wish to tap in to this before-render phase, then you can use use the `render` method in the space before returning an element. By this point, you would still have the updated props or state.
+> By the time `onUpdate` triggers, the component's UI will have already re-rendered. If you wish to tap in to this before-render phase, then you can use use the `render` method in the space before returning an element.
 
 ```typescript
 class AppComponent extends Component<AppProps, AppState> {
@@ -254,11 +303,40 @@ rxdom.render(App(), document.getElementById("app")!);
 
 > This was another important design goal for using RxDOM with [Pine](https://github.com/IsaacAderogba/pine). Pine's content DOM relies on predictable, synchronous rendering. Trying to manage the content DOM with an asynchronous renderer leads to subtle [bugs](https://discuss.prosemirror.net/t/react-node-view-loses-selection-when-switching-between-block-types/4691/3).
 
-#### Virtual DOM
+#### Virtual DOM and Reconciliation
 
 Unlike modern frameworks such as Svelte and SolidJs, RxDOM uses a Virtual DOM to minimize interaction with the real DOM. This is done by way of diff between Virtual DOM and real DOM nodes.
 
-Importantly, RxDOM doesn’t require you to specify `keys` when constructing different components or nodes. This leads to improved developer productivity - at the expense of performance in the situations that involve reordering child nodes.
+Further, RxDOM decides which DOM nodes to update through order-based and key-based reconciliation. Importantly, RxDOM only requires keys when creating stateful `Components`. While this may seem tedious, it helps avoid a lot of subtle problems with reconciliation that plague frameworks like React.
+
+For example, many developers may not realize that the following presents a problem for components that manage state:
+
+```html
+return (
+  <ul>
+    <StatefulComponent type="b" />
+    <StatefulComponent type="c" />
+  </ul>
+);
+```
+
+Render #1
+
+```html
+return (
+  <ul>
+    <StatefulComponent type="a" />
+    <StatefulComponent type="b" />
+    <StatefulComponent type="c" />
+  </ul>
+);
+```
+
+Render #2
+
+Because the returned list differs between renders, React will match the previous `<StatefulComponent type="b" />` with the new `<StatefulComponent type="a" />`. This is troublesome, because `<StatefulComponent type="a" />` actually inherits the state of `<StatefulComponent type="b" />`  instead of creating its own. What's worse, React doesn't detect and warn you about these issues.
+
+The simple fix for this, as well as a host of other subtle issues, is to require keys for stateful components.
 
 #### Rx Nodes
 
