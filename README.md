@@ -61,6 +61,160 @@ rxdom.render(App({ key: "root" }), document.getElementById("app")!);
 
 "hello, world!” using a class component and lifecycle methods.
 
+#### State Management
+
+In this guide, we’ll discuss the core concepts of state management in RxDOM.
+
+Put simply, state management is a way to facilitate communication and sharing of data across components. In RxDOM, state management is best done through the use of context components. Context components are useful when our data needs to be made accessible at varying levels of depth.
+
+To start this guide, let’s first get our imports out of the way:
+
+```typescript
+import {
+  // renderer
+  RxDOM,
+  // component creators
+  Component,
+  composeContext,
+  composeFunction,
+  // fragment creators
+  div,
+  ul,
+  li,
+  input,
+} from "@iatools/rxdom";
+```
+
+We’ll be building a simple todo application, so let’s first define the data model for what a todo looks like.
+
+```typescript
+type TodoModel = {
+  id: number;
+  name: string;
+  done: boolean;
+};
+```
+
+When thinking about state management, it’s useful to think about the *state* of our application and the *actions* that can transition that state. For our state, we'll be working with an array of todos, so let's formalize that in our `StoreState` interface.
+
+```typescript
+interface StoreState {
+  todos: TodoModel[];
+}
+```
+
+To keep our actions simple, we’ll allow our users to toggle todos as completed or not. We’ll similarly define this in a `StoreActions` interface.
+
+```typescript
+interface StoreActions {
+  toggleTodo: (id: TodoModel["id"]) => void;
+}
+```
+
+> It's not strictly necessary to separate state and actions as I've done. You could unify these two interfaces if you wish (though we'll do that later).
+
+Because we want both our *state* and our *actions* to be accessible by all of our components, we’ll set up a context component. In RxDOM, context components are created by calling the `composeContext` factory method.
+
+```typescript
+type StoreContextProps = StoreState & StoreActions;
+const [StoreProvider, storeSelector] = composeContext<StoreContextProps>(
+  ({ props }) => div({ content: props.content })
+);
+```
+
+This factory method expects us to return a html fragment, and in turn gives us a provider component and a context selector function.
+
+To see the `StoreProvider` in action, let's define a class component that is capable of managing the `todos` state. This component will also define a `toggleTodo` method and pass both the method and the state to our `StoreProvider`.
+
+```typescript
+type TodoAppState = Pick<StoreContextProps, "todos">;
+class TodoAppBlueprint extends Component<TodoAppState> {
+  state = {
+    todos: [
+      { id: 1, name: "Manage state", done: false },
+      { id: 2, name: "Publish docs", done: false },
+    ],
+  };
+
+  toggleTodo = (id: number) => {
+    this.setState((prev) => ({
+      ...prev,
+      todos: prev.todos.map((todo) => {
+        if (todo.id === id) return { ...todo, done: !todo.done };
+        return todo;
+      }),
+    }));
+  };
+
+  render() {
+    return StoreProvider({
+      todos: this.state.todos,
+      toggleTodo: this.toggleTodo,
+      content: [TodoList()],
+    });
+  }
+}
+
+const TodoApp = Component.compose(TodoAppBlueprint);
+```
+
+Creating class components in this manner should feel familiar if you have prior experience with react. Importantly, the `todos` and `toggleTodo` properties which we pass to our `StoreProvider` will now be accessible by any child components - without having to pass props directly. Because classes act as blueprints, we'll need to componentize this class by calling the `Component.compose` static method.
+
+At this juncture, we’ll now see how a descendent component can consume the props of an ancestor. Let’s write our `TodoList` function component.
+
+```typescript
+type TodoListContext = { store: Pick<StoreContextProps, "todos"> };
+
+const TodoList = composeFunction<{}, TodoListContext>(
+  ({ context }) => {
+    const todos = context.store.todos;
+
+    return ul({ content: todos.map((todo) => TodoItem(todo)) });
+  },
+  {
+    store: storeSelector<TodoListContext["store"]>((state) => ({
+      todos: state.todos,
+    })),
+  }
+);
+```
+
+This demonstrates that when we want a component to consume some context, we provide a second argument to our `composeFunction` factory method. This argument must be an object, with each key-value pair representing a context selector. Because our `TodoList` only needs access to the `todos` property, we can specify this in the body of our invoked `storeSelector` .
+
+> Importantly, RxDOM will only re-render a component when its state, props, or context has changed. By using our selector to consume just the properties needed, we're in turn optimizing the performance of our application.
+
+By now you should be familiar with how state management works. Our second last step will be to define the `TodoItem` component which ultimately calls the `toggleTodo` method. Similarly, this component consumes a specific slice of the store context.
+
+```typescript
+export type TodoItemProps = TodoModel;
+export type TodoItemContext = { store: Pick<StoreContextProps, "toggleTodo"> };
+const TodoItem = composeFunction<TodoItemProps, TodoItemContext>(
+  ({ props, context }) => {
+    const { id, name, done } = props;
+    const { toggleTodo } = context.store;
+
+    return li({
+      content: [
+        input({
+          type: "checkbox",
+          checked: done,
+          onclick: () => toggleTodo(id),
+        }),
+        name,
+      ],
+    });
+  },
+  { store: storeSelector((state) => ({ toggleTodo: state.toggleTodo })) }
+);
+```
+
+Attaching our app to the DOM is then as simple as creating an `RxDOM` instance and calling `render` on it with the necessary arguments.
+
+```typescript
+const rxdom = new RxDOM();
+rxdom.render(TodoApp({ key: "root" }), document.getElementById("app")!);
+```
+
 ## Docs
 
 #### Fragments
@@ -125,7 +279,7 @@ RxDOM supports the creation of function, class, and context components through `
 
 **Function Components**
 
-Function components are strictly functional, with no utilities to manage their own state. This makes them highly predictable. While unable to manage their own state, function components can still receive `props` from a direct parent component or `context` from ancestor provider components.
+Function components are strictly functional, with no utilities to manage their own state. This makes them highly predictable. While unable to manage their own state, function components can still receive `props` from a direct parent component or `context` from ancestor context components.
 
 They’re created via `composeFunction` invocations.
 
@@ -166,7 +320,7 @@ const [ContextProvider, contextSelector] = composeContext<ContextProps>(
 );
 ```
 
-We pass the required props to the provider, while the selector can selectively choose which props to access. As a guideline, always try to access the minimum amount of props. RxDOM will use this when deciding whether to re-render a component. In general, RxDOM won’t re-render a component if the state, props, or context has not changed.
+We pass the required props to the provider, while the selector can selectively choose which props to access. As a guideline, always try to access the minimum amount of props. RxDOM will use this when deciding whether to re-render a component. In general, RxDOM will not re-render a component if the state, props, or context have not changed.
 
 ```typescript
 // passes context props to the provider
