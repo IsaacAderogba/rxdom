@@ -143,9 +143,9 @@ type TodoContext = { app: Pick<AppContextProps, "toggleTodo" | "deleteTodo"> };
 
 const Todo = composeFunction<TodoProps, TodoContext>(
   ({ props, context }) => {
+    console.log("updated", props);
     const { id, name, done } = props;
     const { toggleTodo, deleteTodo } = context.app;
-    console.log("app", context.app);
 
     return div({
       style: { display: "flex", gap: "4px", alignItems: "center" },

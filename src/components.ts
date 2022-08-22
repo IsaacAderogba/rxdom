@@ -14,6 +14,7 @@ import {
   generateId,
   Unsubscribe,
   omit,
+  isShallowEqual,
 } from "./utils";
 
 export type ComponentConfig = {
@@ -91,21 +92,30 @@ export class Component<
   }
 
   setContext(update: C | ((c: C) => C)) {
-    this.context =
-      // @ts-ignore
-      typeof update === "function" ? update(this.context) : update;
+    // @ts-ignore
+    const newCtx = typeof update === "function" ? update(this.context) : update;
+    const isEqual = Object.entries(newCtx).every(([key, newSlice]) =>
+      isShallowEqual(this.context[key], newSlice)
+    );
+    if (isEqual) return;
+
+    this.context = newCtx;
     this.update(this.fiber.node);
   }
 
   setState(update: S | ((s: S) => S)) {
     // @ts-ignore
-    this.state = typeof update === "function" ? update(this.state) : update;
+    const newState = typeof update === "function" ? update(this.state) : update;
+    if (isShallowEqual(this.state, newState)) return;
+    this.state = newState;
     this.update(this.fiber.node);
   }
 
   setProps(node: RxComponent) {
-    this.props = node.props as P;
-    return this.update(node);
+    const newProps = node.props as P;
+    if (isShallowEqual(this.props, newProps)) return;
+    this.props = newProps;
+    this.update(node);
   }
 
   protected onMount(): void | (() => void) {}
@@ -136,7 +146,6 @@ export class Component<
     this.fiber.content = [child];
 
     setTimeout(() => this.onUpdate());
-    return this.fiber;
   }
 
   public render(): RxNode {

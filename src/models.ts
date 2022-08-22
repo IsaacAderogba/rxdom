@@ -7,7 +7,7 @@ import {
 import { Attrs, NodeProps } from "./utils";
 
 interface RxBase {
-  props: Attrs & { content: RxNode[]; key: string };
+  props: Attrs & { content?: RxNode[]; key: string };
 }
 
 export interface RxComponent<S = any, P = any, C = any> extends RxBase {

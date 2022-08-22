@@ -27,7 +27,7 @@ export class SyncRenderer {
       return newFiber;
     } else if (!node) {
       // remove
-      fiber.content.forEach(child => this.render(fiber, fiber.dom, child));
+      fiber.content.forEach((child) => this.render(fiber, fiber.dom, child));
       fiber.dom.remove();
       if ("component" in fiber) fiber.component.unmount();
       return;
@@ -35,13 +35,14 @@ export class SyncRenderer {
       // replace
       const newFiber = this.construct(root, node);
       dom.replaceChild(newFiber.dom, fiber.dom);
-      fiber.content.forEach(child => this.render(fiber, fiber.dom, child));
+      fiber.content.forEach((child) => this.render(fiber, fiber.dom, child));
       if ("component" in fiber) fiber.component.unmount();
       return newFiber;
     } else if (node.type === "component") {
       // update component
       const cfiber = fiber as FiberComponent;
-      return cfiber.component.setProps(node);
+      cfiber.component.setProps(node);
+      return cfiber;
     } else if (node.type === "element") {
       // update element fragment
       fiber.node = node;
@@ -60,7 +61,7 @@ export class SyncRenderer {
   reconcile = (parent: FiberFragment, node: RxNode): FiberInstance[] => {
     const dom = parent.dom;
     const fibers = parent.content;
-    const nodes = node.props.content;
+    const nodes = node.props.content || [];
 
     const instances: FiberInstance[] = [];
     const count = Math.max(fibers.length, nodes.length);
@@ -106,15 +107,16 @@ export class SyncRenderer {
     updateDomProps(dom, {}, node.props);
 
     const fiber: FiberFragment = { dom, node, content: [], parent };
-    this.warnDuplicateKeys(fiber, node.props.content);
-    fiber.content = node.props.content.map(c => this.construct(fiber, c));
-    fiber.content.forEach(child => dom.appendChild(child.dom));
+    const content = node.props.content || [];
+    this.warnDuplicateKeys(fiber, content);
+    fiber.content = content.map((c) => this.construct(fiber, c));
+    fiber.content.forEach((child) => dom.appendChild(child.dom));
 
     return fiber;
   };
 
   private warnDuplicateKeys(parent: FiberInstance, nodes: RxNode[]) {
-    const customComponents = nodes.filter(n => {
+    const customComponents = nodes.filter((n) => {
       return n.type === "component" && n.template.constructor !== Component;
     }) as RxComponent[];
 
