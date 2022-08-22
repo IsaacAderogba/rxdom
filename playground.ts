@@ -23,7 +23,7 @@ type AppContextProps = {
   deleteTodo: (id: string) => void;
 };
 
-const [AppProvider, AppConsumer] = composeContext<AppContextProps>(
+const [AppProvider, appSelector] = composeContext<AppContextProps>(
   ({ props }) => {
     return div({ content: props.content });
   }
@@ -38,15 +38,15 @@ class AppComponent extends Component<AppState, {}> {
   }
 
   addTodo = (name: string) => {
-    this.setState(prev => ({
+    this.setState((prev) => ({
       todos: [...prev.todos, { id: Date.now().toString(), done: false, name }],
     }));
   };
 
   toggleTodo = (id: string) => {
-    this.setState(prev => ({
+    this.setState((prev) => ({
       ...prev,
-      todos: prev.todos.map(todo => {
+      todos: prev.todos.map((todo) => {
         if (todo.id === id) return { ...todo, done: !todo.done };
         return todo;
       }),
@@ -54,9 +54,9 @@ class AppComponent extends Component<AppState, {}> {
   };
 
   deleteTodo = (id: string) => {
-    this.setState(prev => ({
+    this.setState((prev) => ({
       ...prev,
-      todos: prev.todos.filter(todo => todo.id !== id),
+      todos: prev.todos.filter((todo) => todo.id !== id),
     }));
   };
 
@@ -102,7 +102,7 @@ class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
         input({
           value: this.state.name,
           oninput: (e: any) =>
-            this.setState(s => ({ ...s, name: e.target.value })),
+            this.setState((s) => ({ ...s, name: e.target.value })),
         }),
       ],
     });
@@ -110,7 +110,7 @@ class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
 }
 
 const TodoForm = Component.compose(TodoFormComponent, {
-  app: AppConsumer,
+  app: appSelector(),
 });
 
 type TodoListContext = { app: AppContextProps };
@@ -120,10 +120,10 @@ const TodoList = composeFunction<{}, TodoListContext>(
 
     return ul({
       style: { display: "flex", flexDirection: "column", gap: "4px" },
-      content: todos.map(todo => li({ content: [Todo(todo)] })),
+      content: todos.map((todo) => li({ content: [Todo(todo)] })),
     });
   },
-  { app: AppConsumer }
+  { app: appSelector() }
 );
 
 type TodoProps = {
@@ -132,7 +132,9 @@ type TodoProps = {
   done: boolean;
 };
 
-const Todo = composeFunction<TodoProps>(
+type TodoContext = { app: AppContextProps };
+
+const Todo = composeFunction<TodoProps, TodoContext>(
   ({ props, context }) => {
     const { id, name, done } = props;
     const { toggleTodo, deleteTodo } = context.app;
@@ -155,7 +157,12 @@ const Todo = composeFunction<TodoProps>(
       ],
     });
   },
-  { app: AppConsumer }
+  {
+    app: appSelector((state) => ({
+      toggleTodo: state.toggleTodo,
+      deleteTodo: state.deleteTodo,
+    })),
+  }
 );
 
 const rxdom = new RxDOM();

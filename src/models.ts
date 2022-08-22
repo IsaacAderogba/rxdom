@@ -1,4 +1,9 @@
-import { Component, ComponentConfig, ContextProvider } from "./components";
+import {
+  Component,
+  ComponentConfig,
+  ContextProvider,
+  ContextSelector,
+} from "./components";
 import { Attrs, NodeProps } from "./utils";
 
 interface RxBase {
@@ -9,7 +14,7 @@ export interface RxComponent<S = any, P = any, C = any> extends RxBase {
   type: "component";
   context: {
     provider?: ContextProvider;
-    consumer: Record<keyof C, ContextProvider>;
+    consumer: Record<keyof C, ContextSelector>;
   };
   template: RxComponentTemplate<S, P, C>;
 }

@@ -52,11 +52,8 @@ export class Component<
 
     // register consumers
     const consumers = new Map(
-      Object.entries(consumer).map(([key, v]) => {
-        const isClass = v instanceof ContextProvider;
-        const selector: Selector = isClass ? (s) => s : (s) => s;
-
-        return [v, { key, selector }];
+      Object.entries(consumer).map(([key, { contextProvider, selector }]) => {
+        return [contextProvider, { key, selector }];
       })
     );
     const context: Attrs = {};
@@ -226,23 +223,29 @@ export const composeContext = <
     }
   };
 
-  return [
-    (props: Props<P> = {} as P) =>
-      createComponent(
-        {
-          constructor: Component,
-          render: (args) => {
-            emitContext(args.fiber);
-            return render(args);
-          },
+  const provider = (props: Props<P> = {} as P) =>
+    createComponent(
+      {
+        constructor: Component,
+        render: (args) => {
+          emitContext(args.fiber);
+          return render(args);
         },
-        {
-          props: { key, ...props },
-          context: { provider: contextProvider, consumer },
-        }
-      ),
+      },
+      {
+        props: { key, ...props },
+        context: { provider: contextProvider, consumer },
+      }
+    );
+
+  const selector = (
+    selector: (state: P) => any = (s) => s
+  ): ContextSelector => ({
     contextProvider,
-  ] as const;
+    selector,
+  });
+
+  return [provider, selector] as const;
 };
 
 export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
@@ -259,7 +262,11 @@ export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
   };
 };
 
-type Selector = (state: Attrs) => unknown;
+export type ContextSelector = {
+  contextProvider: ContextProvider;
+  selector: (s: any) => any;
+};
+
 type Callback = (attrs: Attrs) => void;
 type Props<P> = P & NodeProps;
 type Context<S, P, C> = RequiredKeys<
