@@ -238,8 +238,8 @@ export const composeContext = <
       }
     );
 
-  const selector = (
-    selector: (state: P) => any = (s) => s
+  const selector = <T = P>(
+    selector: (state: P) => T = (s) => s as T
   ): ContextSelector => ({
     contextProvider,
     selector,

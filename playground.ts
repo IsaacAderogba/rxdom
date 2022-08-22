@@ -81,7 +81,7 @@ class AppComponent extends Component<AppState, {}> {
 
 const App = Component.compose(AppComponent);
 
-type TodoFormContext = { app: AppContextProps };
+type TodoFormContext = { app: Pick<AppContextProps, "addTodo"> };
 class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
   state = { name: "" };
 
@@ -110,12 +110,15 @@ class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
 }
 
 const TodoForm = Component.compose(TodoFormComponent, {
-  app: appSelector(),
+  app: appSelector<TodoFormContext["app"]>((state) => ({
+    addTodo: state.addTodo,
+  })),
 });
 
-type TodoListContext = { app: AppContextProps };
+type TodoListContext = { app: Pick<AppContextProps, "todos"> };
+
 const TodoList = composeFunction<{}, TodoListContext>(
-  ({ context, props }) => {
+  ({ context }) => {
     const todos = context.app.todos;
 
     return ul({
@@ -123,7 +126,11 @@ const TodoList = composeFunction<{}, TodoListContext>(
       content: todos.map((todo) => li({ content: [Todo(todo)] })),
     });
   },
-  { app: appSelector() }
+  {
+    app: appSelector<TodoListContext["app"]>((state) => ({
+      todos: state.todos,
+    })),
+  }
 );
 
 type TodoProps = {
@@ -132,7 +139,7 @@ type TodoProps = {
   done: boolean;
 };
 
-type TodoContext = { app: AppContextProps };
+type TodoContext = { app: Pick<AppContextProps, "toggleTodo" | "deleteTodo"> };
 
 const Todo = composeFunction<TodoProps, TodoContext>(
   ({ props, context }) => {
@@ -158,7 +165,7 @@ const Todo = composeFunction<TodoProps, TodoContext>(
     });
   },
   {
-    app: appSelector((state) => ({
+    app: appSelector<TodoContext["app"]>((state) => ({
       toggleTodo: state.toggleTodo,
       deleteTodo: state.deleteTodo,
     })),
