@@ -1,5 +1,5 @@
 {
-  "name": "@iaworkspace/rxdom",
+  "name": "@iatools/rxdom",
   "version": "0.4.0",
   "description": "",
   "main": "dist/index.js",
