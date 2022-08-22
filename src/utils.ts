@@ -6,12 +6,12 @@ export type NodeProps = {
 } & Attrs;
 
 export const createNodeProps = ({
-  content = [],
+  content,
   key = generateId(),
   ...props
 }: NodeProps) => ({
   ...props,
-  content: content.map(c => (typeof c === "object" ? c : textFragment(c))),
+  content: content?.map((c) => (typeof c === "object" ? c : textFragment(c))),
   key,
 });
 
@@ -30,12 +30,12 @@ export function updateDomProps(
   Object.keys(prevProps)
     .filter(isAttr)
     .filter(isGone(prevProps, nextProps))
-    .forEach(name => ((dom as any)[name] = null));
+    .forEach((name) => ((dom as any)[name] = null));
 
   Object.keys(nextProps)
     .filter(isAttr)
     .filter(isNew(prevProps, nextProps))
-    .forEach(name => ((dom as any)[name] = nextProps[name]));
+    .forEach((name) => ((dom as any)[name] = nextProps[name]));
 
   if (dom instanceof HTMLElement) {
     // styles
@@ -58,6 +58,20 @@ export const isNew = (prev: Attrs, next: Attrs) => (key: string) =>
   prev[key] !== next[key];
 export const isGone = (_prev: Attrs, next: Attrs) => (key: string) =>
   !(key in next);
+
+export const isShallowEqual = (a: any, b: any) => {
+  const isAObject = a !== null && typeof a === "object";
+  const isBObject = b !== null && typeof b === "object";
+
+  if (isAObject && isBObject) {
+    return (
+      Object.keys(a).length === Object.keys(b).length &&
+      Object.keys(a).every((key) => b.hasOwnProperty(key) && a[key] === b[key])
+    );
+  }
+
+  return a === b;
+};
 
 export const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);

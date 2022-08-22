@@ -14,6 +14,7 @@ import {
   generateId,
   Unsubscribe,
   omit,
+  isShallowEqual,
 } from "./utils";
 
 export type ComponentConfig = {
@@ -51,7 +52,11 @@ export class Component<
     if (provider) this.unsubscribes.push(provider.registerProvider(this.fiber));
 
     // register consumers
-    const consumers = new Map(Object.entries(consumer).map(([k, v]) => [v, k]));
+    const consumers = new Map(
+      Object.entries(consumer).map(([key, { contextProvider, selector }]) => {
+        return [contextProvider, { key, selector }];
+      })
+    );
     const context: Attrs = {};
 
     const findAndRegister = (fiber?: FiberInstance): void => {
@@ -59,17 +64,19 @@ export class Component<
 
       if ("component" in fiber && fiber.node.context.provider) {
         const contextProvider = fiber.node.context.provider;
-        const key = consumers.get(contextProvider);
 
-        if (key) {
+        const match = consumers.get(contextProvider);
+        if (match) {
+          const { key, selector } = match;
           consumers.delete(contextProvider);
+
           this.unsubscribes.push(
-            contextProvider.registerConsumer(fiber, slice =>
-              this.setContext(prev => ({ ...prev, [key]: slice }))
+            contextProvider.registerConsumer(fiber, (state) =>
+              this.setContext((prev) => ({ ...prev, [key]: selector(state) }))
             )
           );
 
-          context[key] = contextProvider.accessValue(fiber);
+          context[key] = selector(contextProvider.accessValue(fiber));
         }
       }
 
@@ -81,25 +88,34 @@ export class Component<
   }
 
   private removeContext() {
-    this.unsubscribes.forEach(unsub => unsub());
+    this.unsubscribes.forEach((unsub) => unsub());
   }
 
   setContext(update: C | ((c: C) => C)) {
-    this.context =
-      // @ts-ignore
-      typeof update === "function" ? update(this.context) : update;
+    // @ts-ignore
+    const newCtx = typeof update === "function" ? update(this.context) : update;
+    const isEqual = Object.entries(newCtx).every(([key, newSlice]) =>
+      isShallowEqual(this.context[key], newSlice)
+    );
+    if (isEqual) return;
+
+    this.context = newCtx;
     this.update(this.fiber.node);
   }
 
   setState(update: S | ((s: S) => S)) {
     // @ts-ignore
-    this.state = typeof update === "function" ? update(this.state) : update;
+    const newState = typeof update === "function" ? update(this.state) : update;
+    if (isShallowEqual(this.state, newState)) return;
+    this.state = newState;
     this.update(this.fiber.node);
   }
 
   setProps(node: RxComponent) {
-    this.props = node.props as P;
-    return this.update(node);
+    const newProps = node.props as P;
+    if (isShallowEqual(this.props, newProps)) return;
+    this.props = newProps;
+    this.update(node);
   }
 
   protected onMount(): void | (() => void) {}
@@ -130,7 +146,6 @@ export class Component<
     this.fiber.content = [child];
 
     setTimeout(() => this.onUpdate());
-    return this.fiber;
   }
 
   public render(): RxNode {
@@ -165,8 +180,6 @@ export const composeFunction = <
       { props: { key, ...props }, context: { consumer } }
     );
 };
-
-type Callback = (attrs: Attrs) => void;
 
 export class ContextProvider {
   providerConsumers: Map<FiberComponent, Set<Callback>> = new Map();
@@ -219,23 +232,29 @@ export const composeContext = <
     }
   };
 
-  return [
-    (props: Props<P> = {} as P) =>
-      createComponent(
-        {
-          constructor: Component,
-          render: args => {
-            emitContext(args.fiber);
-            return render(args);
-          },
+  const provider = (props: Props<P> = {} as P) =>
+    createComponent(
+      {
+        constructor: Component,
+        render: (args) => {
+          emitContext(args.fiber);
+          return render(args);
         },
-        {
-          props: { key, ...props },
-          context: { provider: contextProvider, consumer },
-        }
-      ),
+      },
+      {
+        props: { key, ...props },
+        context: { provider: contextProvider, consumer },
+      }
+    );
+
+  const selector = <T = P>(
+    selector: (state: P) => T = (s) => s as T
+  ): ContextSelector => ({
     contextProvider,
-  ] as const;
+    selector,
+  });
+
+  return [provider, selector] as const;
 };
 
 export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
@@ -252,6 +271,12 @@ export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
   };
 };
 
+export type ContextSelector = {
+  contextProvider: ContextProvider;
+  selector: (s: any) => any;
+};
+
+type Callback = (attrs: Attrs) => void;
 type Props<P> = P & NodeProps;
 type Context<S, P, C> = RequiredKeys<
   RxComponent<S, P, C>["context"],
