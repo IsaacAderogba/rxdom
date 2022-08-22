@@ -131,12 +131,12 @@ type TodoProps = {
   name: string;
   done: boolean;
 };
-type TodoContext = { app: AppContextProps };
 
-const Todo = composeFunction<TodoProps, TodoContext>(
+const Todo = composeFunction<TodoProps>(
   ({ props, context }) => {
     const { id, name, done } = props;
     const { toggleTodo, deleteTodo } = context.app;
+    console.log("app", context.app);
 
     return div({
       style: { display: "flex", gap: "4px", alignItems: "center" },

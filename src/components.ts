@@ -51,7 +51,14 @@ export class Component<
     if (provider) this.unsubscribes.push(provider.registerProvider(this.fiber));
 
     // register consumers
-    const consumers = new Map(Object.entries(consumer).map(([k, v]) => [v, k]));
+    const consumers = new Map(
+      Object.entries(consumer).map(([key, v]) => {
+        const isClass = v instanceof ContextProvider;
+        const selector: Selector = isClass ? (s) => s : (s) => s;
+
+        return [v, { key, selector }];
+      })
+    );
     const context: Attrs = {};
 
     const findAndRegister = (fiber?: FiberInstance): void => {
@@ -59,17 +66,19 @@ export class Component<
 
       if ("component" in fiber && fiber.node.context.provider) {
         const contextProvider = fiber.node.context.provider;
-        const key = consumers.get(contextProvider);
 
-        if (key) {
+        const match = consumers.get(contextProvider);
+        if (match) {
+          const { key, selector } = match;
           consumers.delete(contextProvider);
+
           this.unsubscribes.push(
-            contextProvider.registerConsumer(fiber, slice =>
-              this.setContext(prev => ({ ...prev, [key]: slice }))
+            contextProvider.registerConsumer(fiber, (state) =>
+              this.setContext((prev) => ({ ...prev, [key]: selector(state) }))
             )
           );
 
-          context[key] = contextProvider.accessValue(fiber);
+          context[key] = selector(contextProvider.accessValue(fiber));
         }
       }
 
@@ -81,7 +90,7 @@ export class Component<
   }
 
   private removeContext() {
-    this.unsubscribes.forEach(unsub => unsub());
+    this.unsubscribes.forEach((unsub) => unsub());
   }
 
   setContext(update: C | ((c: C) => C)) {
@@ -166,8 +175,6 @@ export const composeFunction = <
     );
 };
 
-type Callback = (attrs: Attrs) => void;
-
 export class ContextProvider {
   providerConsumers: Map<FiberComponent, Set<Callback>> = new Map();
 
@@ -224,7 +231,7 @@ export const composeContext = <
       createComponent(
         {
           constructor: Component,
-          render: args => {
+          render: (args) => {
             emitContext(args.fiber);
             return render(args);
           },
@@ -252,6 +259,8 @@ export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
   };
 };
 
+type Selector = (state: Attrs) => unknown;
+type Callback = (attrs: Attrs) => void;
 type Props<P> = P & NodeProps;
 type Context<S, P, C> = RequiredKeys<
   RxComponent<S, P, C>["context"],
