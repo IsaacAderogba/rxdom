@@ -21,7 +21,8 @@
     "coverage": "vitest run --coverage",
     "dev": "vite",
     "build": "tsup src/index.ts --format esm,cjs --dts --minify",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepublish": "npm run build"
   },
   "repository": {
     "type": "git",
