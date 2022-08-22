@@ -130,7 +130,7 @@ Function components are strictly functional, with no utilities to manage their o
 They’re created via `composeFunction` invocations.
 
 ```typescript
-const FunctionComponent = composeFunction((props, context) => {
+const FunctionComponent = composeFunction(({ props, context }) => {
   return h1({ content: ["hello, world!"] });
 });
 ```
@@ -155,18 +155,18 @@ const ClassComponent = Component.compose(ClassBlueprint);
 
 **Context Components**
 
-Context components allow us to easily pass props down the component hierarchy. They’re similar to context components as defined by React. Unlike the components we’ve seen thus far, invoking `composeContext` will return both a `Provider` and a `Consumer`.
+Context components allow us to easily pass props down the component hierarchy. They’re similar to context components as defined by React. Unlike the components we’ve seen thus far, invoking `composeContext` will return both a provider component and a context selector function.
 
 ```typescript
 type ContextProps = { greeting: string };
-const [ContextProvider, ContextConsumer] = composeContext<ContextProps>(
+const [ContextProvider, contextSelector] = composeContext<ContextProps>(
   ({ props }) => {
     return div({ content: props.content });
   }
 );
 ```
 
-Any props passed to the `Provider` component will be made accessible to children `Consumer` components.
+We pass the required props to the provider, while the selector can selectively choose which props to access. As a guideline, always try to access the minimum amount of props. RxDOM will use this when deciding whether to re-render a component. In general, RxDOM won’t re-render a component if the state, props, or context has not changed.
 
 ```typescript
 // passes context props to the provider
@@ -182,11 +182,11 @@ const Todo = composeFunction(
   ({ context }) => {
     return div({ content: [context.consumer.greeting] });
   },
-  { consumer: ContextConsumer }
+  { consumer: contextSelector((props) => ({ greeting: props.greeting })) }
 );
 ```
 
-Reserved props such as `content` and `key` are not passed down to the consumer.
+Reserved props such as `content` and `key` are not passed down to the selector.
 
 **Example**
 
@@ -195,7 +195,7 @@ To get a sense for how function, class, and context components may be used toget
 ```typescript
 // provider component
 type ContextProps = { greeting: string };
-const [ContextProvider, ContextConsumer] = composeContext<ContextProps>(
+const [ContextProvider, contextSelector] = composeContext<ContextProps>(
   ({ props }) => {
     return div({ content: props.content });
   }
@@ -215,11 +215,13 @@ class ClassBlueprint extends Component {
 const ClassComponent = Component.compose(ClassBlueprint);
 
 // function component
-const FunctionComponent = composeFunction<{}, { consumer: ContextProps }>(
+type Context = { props: ContextProps };
+
+const FunctionComponent = composeFunction<{}, Context>(
   ({ context }) => {
-    return h1({ content: [context.consumer.greeting] });
+    return h1({ content: [context.props.greeting] });
   },
-  { consumer: ContextConsumer }
+  { props: contextSelector<Context["props"]>() }
 );
 
 const rxdom = new RxDOM();
