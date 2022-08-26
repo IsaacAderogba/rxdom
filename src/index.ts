@@ -1,4 +1,4 @@
-export { Component, composeFunction, composeContext } from "./components";
+export { Component, ContextProvider, composeFunction, composeContext } from "./components";
 export type { ComponentSpec } from "./components";
 export * from "./fragments";
 export { SyncRenderer } from "./renderers";
