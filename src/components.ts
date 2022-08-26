@@ -15,9 +15,10 @@ import {
   Unsubscribe,
   omit,
   isShallowEqual,
+  Any,
 } from "./utils";
 
-export type ComponentConfig = {
+export type ComponentSpec = {
   renderer: Renderer;
   fiber: FiberComponent;
 };
@@ -33,16 +34,16 @@ export class Component<
 
   protected fiber: FiberComponent;
   protected state: Readonly<S>;
-  protected props: Readonly<P>;
+  protected props: Readonly<NodeProps<P>>;
   protected context: Readonly<C>;
 
-  constructor({ renderer, fiber }: ComponentConfig) {
+  constructor({ renderer, fiber }: ComponentSpec) {
     this.renderer = renderer;
     this.template = fiber.node.template;
 
     this.fiber = fiber;
     this.state = {} as S;
-    this.props = fiber.node.props as P;
+    this.props = fiber.node.props as NodeProps<P>;
     this.context = this.initContext();
   }
 
@@ -112,7 +113,7 @@ export class Component<
   }
 
   setProps(node: RxComponent) {
-    const newProps = node.props as P;
+    const newProps = node.props as NodeProps<P>;
     if (isShallowEqual(this.props, newProps)) return;
     this.props = newProps;
     this.update(node);
@@ -161,7 +162,7 @@ export class Component<
     constructor: RxComponentTemplate<S, P, C>["constructor"],
     consumer: Context<S, P, C>["consumer"] = {} as C
   ) => {
-    return (props: Props<P> & { key: string }) =>
+    return (props: NodeProps<P> & { key: string }) =>
       createComponent({ constructor }, { props, context: { consumer } });
   };
 }
@@ -174,7 +175,7 @@ export const composeFunction = <
   consumer: Context<{}, P, C>["consumer"] = {} as C
 ) => {
   const key = generateId();
-  return (props: Props<P> = {} as P) =>
+  return (props: NodeProps<P> = {} as P) =>
     createComponent(
       { render, constructor: Component },
       { props: { key, ...props }, context: { consumer } }
@@ -232,7 +233,7 @@ export const composeContext = <
     }
   };
 
-  const provider = (props: Props<P> = {} as P) =>
+  const provider = (props: NodeProps<P> = {} as P) =>
     createComponent(
       {
         constructor: Component,
@@ -247,9 +248,7 @@ export const composeContext = <
       }
     );
 
-  const selector = <T = P>(
-    selector: (props: P) => T = (p) => p as T
-  ): ContextSelector => ({
+  const selector = <T>(selector: (props: P) => T): ContextSelector<T> => ({
     contextProvider,
     selector,
   });
@@ -259,7 +258,7 @@ export const composeContext = <
 
 export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
   template: RxComponentTemplate<S, P, C>,
-  options: { props: Props<P>; context: Context<S, P, C> }
+  options: { props: NodeProps<P>; context: Context<S, P, C> }
 ): RxComponent => {
   const { props, context } = options;
 
@@ -271,13 +270,12 @@ export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
   };
 };
 
-export type ContextSelector = {
+export type ContextSelector<S=Any> = {
   contextProvider: ContextProvider;
-  selector: (s: any) => any;
+  selector: (props: Any) => S;
 };
 
 type Callback = (attrs: Attrs) => void;
-type Props<P> = P & NodeProps;
 type Context<S, P, C> = RequiredKeys<
   RxComponent<S, P, C>["context"],
   "consumer"

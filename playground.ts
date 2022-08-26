@@ -110,9 +110,7 @@ class TodoFormComponent extends Component<{}, {}, TodoFormContext> {
 }
 
 const TodoForm = Component.compose(TodoFormComponent, {
-  app: appSelector<TodoFormContext["app"]>((state) => ({
-    addTodo: state.addTodo,
-  })),
+  app: appSelector((state) => ({ addTodo: state.addTodo })),
 });
 
 type TodoListContext = { app: Pick<AppContextProps, "todos"> };
@@ -127,7 +125,7 @@ const TodoList = composeFunction<{}, TodoListContext>(
     });
   },
   {
-    app: appSelector<TodoListContext["app"]>((state) => ({
+    app: appSelector((state) => ({
       todos: state.todos,
     })),
   }
@@ -165,7 +163,7 @@ const Todo = composeFunction<TodoProps, TodoContext>(
     });
   },
   {
-    app: appSelector<TodoContext["app"]>((state) => ({
+    app: appSelector((state) => ({
       toggleTodo: state.toggleTodo,
       deleteTodo: state.deleteTodo,
     })),

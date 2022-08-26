@@ -1,30 +1,34 @@
 import {
   Component,
-  ComponentConfig,
+  ComponentSpec,
   ContextProvider,
   ContextSelector,
 } from "./components";
-import { Attrs, NodeProps } from "./utils";
+import { Any, Attrs, NodeProps } from "./utils";
 
 interface RxBase {
   props: Attrs & { content?: RxNode[]; key: string };
 }
 
-export interface RxComponent<S = any, P = any, C = any> extends RxBase {
+export interface RxComponent<S = Any, P = Any, C = Any> extends RxBase {
   type: "component";
   context: {
     provider?: ContextProvider;
-    consumer: Record<keyof C, ContextSelector>;
+    consumer: TypedConsumer<C>;
   };
   template: RxComponentTemplate<S, P, C>;
 }
 
+type TypedConsumer<C> = {
+  [P in keyof C]: ContextSelector<C[P]>;
+};
+
 export type RxComponentTemplate<S, P, C> = {
   constructor: {
-    new (config: ComponentConfig): Component<S, P, C>;
+    new (spec: ComponentSpec): Component<S, P, C>;
   };
   render?: (args: {
-    props: NodeProps & P;
+    props: NodeProps<P>;
     context: C;
     fiber: FiberComponent;
   }) => RxNode;

@@ -2,10 +2,12 @@ import { DOMElement, RxFragment } from "./models";
 import { NodeProps, createNodeProps, Attrs } from "./utils";
 
 type FragmentProps = Partial<
-  Attrs &
-    Partial<GlobalEventHandlers> & {
-      style?: Partial<CSSStyleDeclaration>;
-    } & NodeProps
+  NodeProps<
+    Attrs &
+      Partial<GlobalEventHandlers> & {
+        style?: Partial<CSSStyleDeclaration>;
+      }
+  >
 >;
 
 const createFragment = (

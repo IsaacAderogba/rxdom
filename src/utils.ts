@@ -1,15 +1,15 @@
 import { DOMElement, RxFragment, RxNode } from "./models";
 
-export type NodeProps = {
+export type NodeProps<P> = P & {
   content?: (RxNode | TextFragment)[];
   key?: string;
 } & Attrs;
 
-export const createNodeProps = ({
+export const createNodeProps = <P>({
   content,
   key = generateId(),
   ...props
-}: NodeProps) => ({
+}: NodeProps<P>) => ({
   ...props,
   content: content?.map((c) => (typeof c === "object" ? c : textFragment(c))),
   key,
@@ -88,3 +88,4 @@ export type RequiredKeys<T, K extends keyof T> = Partial<T> &
   Required<OptionalPick<T, K>>;
 
 export type Unsubscribe = () => void;
+export type Any = any;
