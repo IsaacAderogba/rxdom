@@ -270,7 +270,9 @@ export const createComponent = <S = Attrs, P = Attrs, C = Attrs>(
   };
 };
 
-export type ContextSelector<S=Any> = {
+export type ComposedComponent<P=Any> = (props?: P) => RxComponent;
+
+export type ContextSelector<S = Any> = {
   contextProvider: ContextProvider;
   selector: (props: Any) => S;
 };
